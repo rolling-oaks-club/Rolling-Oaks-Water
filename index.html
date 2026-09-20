@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rolling Oaks Water Tracking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --page:        #f9f9f7;
+    --surface:     #fcfcfb;
+    --ink-1:       #0b0b0b;
+    --ink-2:       #52514e;
+    --ink-muted:   #898781;
+    --gridline:    #e1e0d9;
+    --baseline:    #c3c2b7;
+    --accent:      #2a78d6;
+    --accent-wash: rgba(42, 120, 214, 0.10);
+    --accent-well: #a8541f;
+    --raw-dot:     #b6b4ab;
+    --good:        #006300;
+    --bad:         #d03b3b;
+    --border:      rgba(11, 11, 11, 0.10);
+    --card-shadow: 0 1px 2px rgba(11,11,11,0.04), 0 1px 1px rgba(11,11,11,0.03);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page:        #0d0d0d;
+      --surface:     #1a1a19;
+      --ink-1:       #ffffff;
+      --ink-2:       #c3c2b7;
+      --ink-muted:   #898781;
+      --gridline:    #2c2c2a;
+      --baseline:    #383835;
+      --accent:      #3987e5;
+      --accent-wash: rgba(57, 135, 229, 0.14);
+      --accent-well: #c9803a;
+      --raw-dot:     #55544f;
+      --good:        #0ca30c;
+      --bad:         #e66767;
+      --border:      rgba(255,255,255,0.10);
+      --card-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 1px rgba(0,0,0,0.2);
+    }
+  }
+  :root[data-theme="dark"] {
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --ink-1:       #ffffff;
+    --ink-2:       #c3c2b7;
+    --ink-muted:   #898781;
+    --gridline:    #2c2c2a;
+    --baseline:    #383835;
+    --accent:      #3987e5;
+    --accent-wash: rgba(57, 135, 229, 0.14);
+    --accent-well: #c9803a;
+    --raw-dot:     #55544f;
+    --good:        #0ca30c;
+    --bad:         #e66767;
+    --border:      rgba(255,255,255,0.10);
+    --card-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 1px 1px rgba(0,0,0,0.2);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--page);
+    color: var(--ink-1);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 24px 16px 48px;
+  }
+
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    font-weight: 650;
+  }
+
+  .view-toggle {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+    box-shadow: var(--card-shadow);
+    flex: none;
+  }
+
+  .view-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 6px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+
+  .view-btn.active { background: var(--accent); color: #fff; }
+  .view-btn:not(.active):hover { background: var(--accent-wash); }
+
+  header h1 {
+    font-size: 1.5rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+
+  header p {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  @media (max-width: 640px) {
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .stat-tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 14px 12px;
+    box-shadow: var(--card-shadow);
+  }
+
+  .stat-tile .label {
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  .stat-tile .value {
+    font-size: 1.5rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  .stat-tile .sub {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    margin-top: 3px;
+  }
+
+  .delta-up { color: var(--good); }
+  .delta-down { color: var(--bad); }
+
+  .year-bars {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  .year-bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+  .year-bar-pct { font-size: 0.66rem; font-weight: 650; margin-bottom: 3px; white-space: nowrap; }
+  .year-bar-pct:not(.delta-up):not(.delta-down) { color: var(--ink-muted); }
+  .year-bar-value { font-size: 0.72rem; font-weight: 650; margin-bottom: 3px; white-space: nowrap; }
+  .year-bar-track { height: 34px; display: flex; align-items: flex-end; }
+  .year-bar { width: 18px; background: var(--accent); border-radius: 3px 3px 0 0; }
+  .year-bar-label { font-size: 0.72rem; color: var(--ink-2); font-weight: 650; margin-top: 4px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 18px 14px;
+    box-shadow: var(--card-shadow);
+  }
+
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-bottom: 6px;
+  }
+
+  .card-head h2 {
+    font-size: 1rem;
+    font-weight: 650;
+    margin: 0;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    color: var(--ink-2);
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+
+  .legend-swatch { width: 16px; height: 2px; background: var(--accent); border-radius: 1px; flex: none; }
+  .legend-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--raw-dot); flex: none; }
+  .legend-line { width: 12px; height: 0; border-top: 1.5px dashed var(--ink-muted); flex: none; }
+
+  .chart-shell { position: relative; }
+
+  svg.chart { display: block; width: 100%; height: auto; overflow: visible; }
+
+  .tick-label { fill: var(--ink-muted); font-size: 10px; }
+  .axis-line { stroke: var(--baseline); stroke-width: 1; }
+  .grid-line { stroke: var(--gridline); stroke-width: 1; }
+  .trend-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .raw-dot { fill: var(--raw-dot); }
+  .event-line { stroke: var(--ink-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .gap-mask { fill: var(--surface); }
+  .gap-cut { stroke: var(--ink-muted); stroke-width: 1.5; stroke-linecap: round; }
+  .gap-label { fill: var(--ink-muted); font-size: 8px; }
+  .event-leader { stroke: var(--ink-muted); stroke-width: 1; }
+  .event-badge { fill: var(--ink-2); }
+  .event-badge-text { fill: var(--surface); font-size: 9px; font-weight: 650; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .clip-marker { fill: var(--ink-2); }
+  .crosshair { stroke: var(--ink-muted); stroke-width: 1; }
+  .hover-dot-trend { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+  .hover-dot-raw { fill: var(--raw-dot); stroke: var(--surface); stroke-width: 2; }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--ink-1);
+    color: var(--page);
+    font-size: 0.75rem;
+    line-height: 1.45;
+    border-radius: 8px;
+    padding: 8px 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    transform: translate(-50%, -110%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.08s ease;
+    z-index: 5;
+  }
+  .tooltip.show { opacity: 1; }
+  .tooltip .t-date { color: var(--ink-muted); margin-bottom: 3px; }
+  .tooltip .t-row { display: flex; align-items: center; gap: 6px; }
+  .tooltip .t-key { width: 10px; height: 2px; flex: none; }
+  .tooltip .t-val { font-weight: 650; font-variant-numeric: tabular-nums; }
+  .tooltip .t-note { color: var(--ink-muted); margin-top: 2px; max-width: 220px; white-space: normal; }
+
+  .events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .event-row {
+    display: flex;
+    gap: 10px;
+    font-size: 0.82rem;
+    align-items: baseline;
+  }
+  .event-row .e-num {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink-2);
+    color: var(--surface);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 9px;
+    font-weight: 650;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .event-row .e-date {
+    color: var(--ink-muted);
+    flex: none;
+    width: 118px;
+  }
+  .event-row .e-label { color: var(--ink-1); }
+  .events-empty { color: var(--ink-muted); font-size: 0.85rem; }
+
+  .monthly-table-wrap {
+    max-height: 340px;
+    overflow-y: auto;
+    margin-top: 4px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .monthly-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+  .monthly-table thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    font-weight: 650;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .monthly-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  .monthly-table tbody tr:last-child td { border-bottom: none; }
+  .monthly-table td.mo-month { color: var(--ink-1); font-weight: 600; white-space: nowrap; }
+  .monthly-table td.mo-reading, .monthly-table td.mo-pumped {
+    text-align: left;
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    white-space: nowrap;
+  }
+  .monthly-table td.mo-pending { color: var(--ink-muted); }
+  .mo-source {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.66rem;
+    font-weight: 400;
+    color: var(--ink-muted);
+    margin-top: 1px;
+    white-space: nowrap;
+  }
+  .monthly-note { font-size: 0.78rem; color: var(--ink-muted); margin-top: 8px; line-height: 1.5; }
+
+  footer {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    line-height: 1.6;
+  }
+  footer strong { color: var(--ink-2); font-weight: 600; }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="header-top">
+      <div class="eyebrow">Rolling Oaks Clubhouse</div>
+      <div class="view-toggle" id="viewToggle">
+        <button class="view-btn" data-view="well" type="button">Well</button>
+        <button class="view-btn" data-view="pool" type="button">Pool</button>
+        <button class="view-btn" data-view="combined" type="button">Combined</button>
+      </div>
+    </div>
+    <h1 id="pageTitle"></h1>
+    <p id="pageDesc"></p>
+  </header>
+
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2 id="chartCardTitle"></h2>
+      <div class="legend">
+        <span class="legend-item" id="legendRawItem"><span class="legend-dot"></span>Raw reading</span>
+        <span class="legend-item" id="legendTrendItem"><span class="legend-swatch" id="trendSwatch"></span>7&#8209;reading trend</span>
+        <span class="legend-item" id="legendEventItem"><span class="legend-line"></span><span id="legendEventLabel"></span></span>
+        <span class="legend-item" id="legendWellItem" style="display:none"><span class="legend-swatch" style="background:var(--accent-well)"></span>Well</span>
+        <span class="legend-item" id="legendPoolItem" style="display:none"><span class="legend-swatch"></span>Pool</span>
+      </div>
+    </div>
+    <div class="chart-shell" id="chartShell">
+      <svg class="chart" id="chart" viewBox="0 0 920 440" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+  </div>
+
+  <div class="card" id="monthlyCard" style="display:none">
+    <div class="card-head"><h2>Monthly pumpage</h2></div>
+    <div class="monthly-table-wrap">
+      <table class="monthly-table">
+        <thead><tr><th>Month</th><th>Reading on the 1st</th><th>Pumped that month</th></tr></thead>
+        <tbody id="monthlyBody"></tbody>
+      </table>
+    </div>
+    <div class="monthly-note">&#8776; = no reading was logged exactly on the 1st; interpolated from the nearest actual readings. ~ = that month&rsquo;s total includes an estimated endpoint.</div>
+  </div>
+
+  <div class="card" id="eventsCard">
+    <div class="card-head"><h2 id="eventsCardTitle"></h2></div>
+    <div class="events-list" id="eventsList"></div>
+  </div>
+
+  <footer id="footerNote"></footer>
+</div>
+
+<script>
+(function () {
+  var DATA = {"well": {"points": [{"t": "2025-06-19T09:08:00", "gpd": 345.5, "segIndex": 0}, {"t": "2025-06-19T18:54:00", "gpd": 327.3, "segIndex": 0}, {"t": "2025-06-20T10:12:00", "gpd": 343.0, "segIndex": 0}, {"t": "2025-06-20T18:30:00", "gpd": 324.0, "segIndex": 0}, {"t": "2025-06-21T09:41:00", "gpd": 331.4, "segIndex": 0}, {"t": "2025-06-21T10:20:00", "gpd": 351.1, "segIndex": 0}, {"t": "2025-06-22T10:45:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-06-22T19:20:00", "gpd": 314.6, "segIndex": 0}, {"t": "2025-06-23T09:15:00", "gpd": 312.1, "segIndex": 0}, {"t": "2025-06-24T09:16:00", "gpd": 325.0, "segIndex": 0}, {"t": "2025-06-25T08:45:00", "gpd": 298.9, "segIndex": 0}, {"t": "2025-06-26T10:38:00", "gpd": 335.2, "segIndex": 0}, {"t": "2025-06-27T11:03:00", "gpd": 312.1, "segIndex": 0}, {"t": "2025-06-29T13:38:00", "gpd": 322.2, "segIndex": 0}, {"t": "2025-06-30T15:09:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-07-01T14:00:00", "gpd": 307.5, "segIndex": 0}, {"t": "2025-07-02T09:01:00", "gpd": 313.7, "segIndex": 0}, {"t": "2025-07-04T11:35:00", "gpd": 321.3, "segIndex": 0}, {"t": "2025-07-05T16:28:00", "gpd": 319.3, "segIndex": 0}, {"t": "2025-07-06T17:20:00", "gpd": 304.6, "segIndex": 0}, {"t": "2025-07-12T17:54:00", "gpd": 326.5, "segIndex": 0}, {"t": "2025-07-14T10:02:00", "gpd": 316.6, "segIndex": 0}, {"t": "2025-07-17T14:57:00", "gpd": 304.4, "segIndex": 0}, {"t": "2025-07-21T16:51:00", "gpd": 298.9, "segIndex": 0}, {"t": "2025-07-26T12:18:00", "gpd": 297.9, "segIndex": 0}, {"t": "2025-07-28T10:35:00", "gpd": 306.2, "segIndex": 0}, {"t": "2025-07-30T18:21:00", "gpd": 280.8, "segIndex": 0}, {"t": "2025-07-31T11:07:00", "gpd": 295.8, "segIndex": 0}, {"t": "2025-07-31T17:48:00", "gpd": 296.3, "segIndex": 0}, {"t": "2025-08-01T15:26:00", "gpd": 296.0, "segIndex": 0}, {"t": "2025-08-03T16:00:00", "gpd": 297.6, "segIndex": 0}, {"t": "2025-08-06T18:22:00", "gpd": 276.0, "segIndex": 0}, {"t": "2025-08-08T09:53:00", "gpd": 290.6, "segIndex": 0}, {"t": "2025-08-10T11:24:00", "gpd": 279.9, "segIndex": 0}, {"t": "2025-08-13T14:03:00", "gpd": 278.9, "segIndex": 0}, {"t": "2025-08-15T09:47:00", "gpd": 278.2, "segIndex": 0}, {"t": "2025-08-18T10:38:00", "gpd": 272.7, "segIndex": 0}, {"t": "2025-08-20T17:25:00", "gpd": 218.2, "segIndex": 0}, {"t": "2025-08-25T18:45:00", "gpd": 241.4, "segIndex": 0}, {"t": "2025-08-27T09:15:00", "gpd": 247.8, "segIndex": 0}, {"t": "2025-09-01T17:27:00", "gpd": 256.7, "segIndex": 0}, {"t": "2025-09-03T08:11:00", "gpd": 243.3, "segIndex": 0}, {"t": "2025-09-06T11:43:00", "gpd": 248.1, "segIndex": 0}, {"t": "2025-09-07T15:53:00", "gpd": 240.9, "segIndex": 0}, {"t": "2025-09-09T15:45:00", "gpd": 247.7, "segIndex": 0}, {"t": "2025-09-11T08:21:00", "gpd": 249.6, "segIndex": 0}, {"t": "2025-09-15T10:53:00", "gpd": 247.8, "segIndex": 0}, {"t": "2025-09-22T16:57:00", "gpd": 246.3, "segIndex": 0}, {"t": "2025-09-25T18:02:00", "gpd": 241.5, "segIndex": 0}, {"t": "2025-09-26T09:09:00", "gpd": 241.3, "segIndex": 0}, {"t": "2025-09-27T09:34:00", "gpd": 396.2, "segIndex": 0}, {"t": "2025-09-28T11:02:00", "gpd": 379.5, "segIndex": 0}, {"t": "2025-09-29T11:22:00", "gpd": 350.5, "segIndex": 0}, {"t": "2025-09-29T19:27:00", "gpd": 454.0, "segIndex": 0}, {"t": "2025-10-01T08:24:00", "gpd": 357.4, "segIndex": 0}, {"t": "2025-10-02T08:20:00", "gpd": 351.0, "segIndex": 0}, {"t": "2025-10-02T17:46:00", "gpd": 372.5, "segIndex": 0}, {"t": "2025-10-03T17:45:00", "gpd": 341.9, "segIndex": 0}, {"t": "2025-10-04T17:24:00", "gpd": 327.7, "segIndex": 0}, {"t": "2025-10-05T15:52:00", "gpd": 337.6, "segIndex": 0}, {"t": "2025-10-07T15:57:00", "gpd": 335.5, "segIndex": 0}, {"t": "2025-10-08T15:11:00", "gpd": 337.0, "segIndex": 0}, {"t": "2025-10-13T09:43:00", "gpd": 334.6, "segIndex": 0}, {"t": "2025-10-15T18:58:00", "gpd": 333.5, "segIndex": 0}, {"t": "2025-10-18T16:01:00", "gpd": 332.5, "segIndex": 0}, {"t": "2025-10-21T08:23:00", "gpd": 330.2, "segIndex": 0}, {"t": "2025-10-22T14:40:00", "gpd": 307.5, "segIndex": 0}, {"t": "2025-10-23T08:30:00", "gpd": 332.1, "segIndex": 0}, {"t": "2025-10-27T11:26:00", "gpd": 330.2, "segIndex": 0}, {"t": "2025-11-02T10:40:00", "gpd": 451.4, "segIndex": 0}, {"t": "2025-11-02T16:03:00", "gpd": 420.9, "segIndex": 0}, {"t": "2025-11-04T08:08:00", "gpd": 409.4, "segIndex": 0}, {"t": "2025-11-04T17:22:00", "gpd": 403.4, "segIndex": 0}, {"t": "2025-11-05T15:14:00", "gpd": 400.9, "segIndex": 0}, {"t": "2025-11-07T17:38:00", "gpd": 400.0, "segIndex": 0}, {"t": "2025-11-10T12:11:00", "gpd": 390.8, "segIndex": 0}, {"t": "2025-11-12T15:07:00", "gpd": 386.8, "segIndex": 0}, {"t": "2025-11-13T08:14:00", "gpd": 389.9, "segIndex": 0}, {"t": "2025-11-16T11:52:00", "gpd": 358.3, "segIndex": 0}, {"t": "2025-11-16T15:43:00", "gpd": 401.1, "segIndex": 0}, {"t": "2025-11-17T09:02:00", "gpd": 395.5, "segIndex": 0}, {"t": "2025-11-17T11:47:00", "gpd": 390.2, "segIndex": 0}, {"t": "2025-11-18T08:28:00", "gpd": 389.4, "segIndex": 0}, {"t": "2025-11-19T09:30:00", "gpd": 385.5, "segIndex": 0}, {"t": "2025-11-19T17:36:00", "gpd": 387.7, "segIndex": 0}, {"t": "2025-11-20T08:46:00", "gpd": 381.8, "segIndex": 0}, {"t": "2025-11-21T10:30:00", "gpd": 386.6, "segIndex": 0}, {"t": "2025-11-22T14:23:00", "gpd": 384.5, "segIndex": 0}, {"t": "2025-11-23T14:53:00", "gpd": 381.9, "segIndex": 0}, {"t": "2025-11-25T15:12:00", "gpd": 385.6, "segIndex": 0}, {"t": "2025-11-26T11:40:00", "gpd": 376.5, "segIndex": 0}, {"t": "2025-11-28T15:18:00", "gpd": 377.8, "segIndex": 0}, {"t": "2025-11-29T17:20:00", "gpd": 384.9, "segIndex": 0}, {"t": "2025-11-30T17:01:00", "gpd": 375.3, "segIndex": 0}, {"t": "2025-12-01T17:53:00", "gpd": 380.1, "segIndex": 0}, {"t": "2025-12-02T11:59:00", "gpd": 380.7, "segIndex": 0}, {"t": "2025-12-04T09:50:00", "gpd": 379.6, "segIndex": 0}, {"t": "2025-12-07T11:27:00", "gpd": 377.1, "segIndex": 0}, {"t": "2025-12-10T15:21:00", "gpd": 374.1, "segIndex": 0}, {"t": "2025-12-20T10:57:00", "gpd": 278.2, "segIndex": 0}, {"t": "2026-01-07T15:15:00", "gpd": 229.9, "segIndex": 0}, {"t": "2026-01-24T23:24:00", "gpd": 422.9, "segIndex": 0}, {"t": "2026-02-03T10:04:00", "gpd": 1021.4, "segIndex": 0}, {"t": "2026-02-07T18:19:00", "gpd": 422.9, "segIndex": 0}, {"t": "2026-02-11T15:29:00", "gpd": 391.1, "segIndex": 0}, {"t": "2026-03-22T16:07:00", "gpd": 200.5, "segIndex": 0}, {"t": "2026-06-10T20:32:00", "gpd": 391.3, "segIndex": 1}, {"t": "2026-06-11T09:02:00", "gpd": 393.8, "segIndex": 1}, {"t": "2026-06-12T16:33:00", "gpd": 389.8, "segIndex": 1}, {"t": "2026-06-14T12:07:00", "gpd": 390.7, "segIndex": 1}, {"t": "2026-06-15T09:56:00", "gpd": 385.6, "segIndex": 1}, {"t": "2026-06-17T19:12:00", "gpd": 396.1, "segIndex": 1}, {"t": "2026-06-23T18:39:00", "gpd": 418.6, "segIndex": 1}, {"t": "2026-06-29T18:34:00", "gpd": 1592.9, "segIndex": 1}, {"t": "2026-06-30T15:23:00", "gpd": 568.5, "segIndex": 1}, {"t": "2026-08-27T11:05:00", "gpd": 316.0, "segIndex": 2}, {"t": "2026-08-28T17:55:00", "gpd": 1578.1, "segIndex": 2}, {"t": "2026-08-29T12:20:00", "gpd": 667.2, "segIndex": 2}, {"t": "2026-09-03T15:39:00", "gpd": 280.3, "segIndex": 2}, {"t": "2026-09-07T14:46:00", "gpd": 878.0, "segIndex": 2}, {"t": "2026-09-08T10:43:00", "gpd": 492.5, "segIndex": 2}, {"t": "2026-09-09T10:21:00", "gpd": 476.0, "segIndex": 2}, {"t": "2026-09-12T10:58:00", "gpd": 460.3, "segIndex": 2}, {"t": "2026-09-16T09:52:00", "gpd": 442.3, "segIndex": 2}, {"t": "2026-09-16T21:09:00", "gpd": 439.2, "segIndex": 2}, {"t": "2026-09-17T09:31:00", "gpd": 429.5, "segIndex": 2}, {"t": "2026-09-18T11:51:00", "gpd": 433.4, "segIndex": 2}, {"t": "2026-09-19T11:08:00", "gpd": 431.2, "segIndex": 2}], "trend": [{"t": "2025-06-19T09:08:00", "gpd": 345.5, "segIndex": 0}, {"t": "2025-06-19T18:54:00", "gpd": 336.4, "segIndex": 0}, {"t": "2025-06-20T10:12:00", "gpd": 343.0, "segIndex": 0}, {"t": "2025-06-20T18:30:00", "gpd": 335.2, "segIndex": 0}, {"t": "2025-06-21T09:41:00", "gpd": 331.4, "segIndex": 0}, {"t": "2025-06-21T10:20:00", "gpd": 337.2, "segIndex": 0}, {"t": "2025-06-22T10:45:00", "gpd": 331.4, "segIndex": 0}, {"t": "2025-06-22T19:20:00", "gpd": 327.3, "segIndex": 0}, {"t": "2025-06-23T09:15:00", "gpd": 324.0, "segIndex": 0}, {"t": "2025-06-24T09:16:00", "gpd": 324.0, "segIndex": 0}, {"t": "2025-06-25T08:45:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-06-26T10:38:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-06-27T11:03:00", "gpd": 314.6, "segIndex": 0}, {"t": "2025-06-29T13:38:00", "gpd": 314.6, "segIndex": 0}, {"t": "2025-06-30T15:09:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-07-01T14:00:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-07-02T09:01:00", "gpd": 313.7, "segIndex": 0}, {"t": "2025-07-04T11:35:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-07-05T16:28:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-07-06T17:20:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-07-12T17:54:00", "gpd": 318.3, "segIndex": 0}, {"t": "2025-07-14T10:02:00", "gpd": 316.6, "segIndex": 0}, {"t": "2025-07-17T14:57:00", "gpd": 316.6, "segIndex": 0}, {"t": "2025-07-21T16:51:00", "gpd": 316.6, "segIndex": 0}, {"t": "2025-07-26T12:18:00", "gpd": 304.6, "segIndex": 0}, {"t": "2025-07-28T10:35:00", "gpd": 304.6, "segIndex": 0}, {"t": "2025-07-30T18:21:00", "gpd": 304.4, "segIndex": 0}, {"t": "2025-07-31T11:07:00", "gpd": 298.9, "segIndex": 0}, {"t": "2025-07-31T17:48:00", "gpd": 297.9, "segIndex": 0}, {"t": "2025-08-01T15:26:00", "gpd": 296.3, "segIndex": 0}, {"t": "2025-08-03T16:00:00", "gpd": 296.3, "segIndex": 0}, {"t": "2025-08-06T18:22:00", "gpd": 296.0, "segIndex": 0}, {"t": "2025-08-08T09:53:00", "gpd": 295.8, "segIndex": 0}, {"t": "2025-08-10T11:24:00", "gpd": 295.8, "segIndex": 0}, {"t": "2025-08-13T14:03:00", "gpd": 290.6, "segIndex": 0}, {"t": "2025-08-15T09:47:00", "gpd": 279.9, "segIndex": 0}, {"t": "2025-08-18T10:38:00", "gpd": 278.9, "segIndex": 0}, {"t": "2025-08-20T17:25:00", "gpd": 278.2, "segIndex": 0}, {"t": "2025-08-25T18:45:00", "gpd": 278.2, "segIndex": 0}, {"t": "2025-08-27T09:15:00", "gpd": 272.7, "segIndex": 0}, {"t": "2025-09-01T17:27:00", "gpd": 256.7, "segIndex": 0}, {"t": "2025-09-03T08:11:00", "gpd": 247.8, "segIndex": 0}, {"t": "2025-09-06T11:43:00", "gpd": 247.8, "segIndex": 0}, {"t": "2025-09-07T15:53:00", "gpd": 243.3, "segIndex": 0}, {"t": "2025-09-09T15:45:00", "gpd": 247.7, "segIndex": 0}, {"t": "2025-09-11T08:21:00", "gpd": 247.8, "segIndex": 0}, {"t": "2025-09-15T10:53:00", "gpd": 247.8, "segIndex": 0}, {"t": "2025-09-22T16:57:00", "gpd": 247.7, "segIndex": 0}, {"t": "2025-09-25T18:02:00", "gpd": 247.7, "segIndex": 0}, {"t": "2025-09-26T09:09:00", "gpd": 246.3, "segIndex": 0}, {"t": "2025-09-27T09:34:00", "gpd": 396.2, "segIndex": 0}, {"t": "2025-09-28T11:02:00", "gpd": 387.9, "segIndex": 0}, {"t": "2025-09-29T11:22:00", "gpd": 379.5, "segIndex": 0}, {"t": "2025-09-29T19:27:00", "gpd": 454.0, "segIndex": 0}, {"t": "2025-10-01T08:24:00", "gpd": 405.7, "segIndex": 0}, {"t": "2025-10-02T08:20:00", "gpd": 357.4, "segIndex": 0}, {"t": "2025-10-02T17:46:00", "gpd": 372.5, "segIndex": 0}, {"t": "2025-10-03T17:45:00", "gpd": 357.2, "segIndex": 0}, {"t": "2025-10-04T17:24:00", "gpd": 341.9, "segIndex": 0}, {"t": "2025-10-05T15:52:00", "gpd": 339.8, "segIndex": 0}, {"t": "2025-10-07T15:57:00", "gpd": 337.6, "segIndex": 0}, {"t": "2025-10-08T15:11:00", "gpd": 337.3, "segIndex": 0}, {"t": "2025-10-13T09:43:00", "gpd": 337.0, "segIndex": 0}, {"t": "2025-10-15T18:58:00", "gpd": 335.5, "segIndex": 0}, {"t": "2025-10-18T16:01:00", "gpd": 334.6, "segIndex": 0}, {"t": "2025-10-21T08:23:00", "gpd": 334.6, "segIndex": 0}, {"t": "2025-10-22T14:40:00", "gpd": 333.5, "segIndex": 0}, {"t": "2025-10-23T08:30:00", "gpd": 332.5, "segIndex": 0}, {"t": "2025-10-27T11:26:00", "gpd": 332.1, "segIndex": 0}, {"t": "2025-11-02T10:40:00", "gpd": 451.4, "segIndex": 0}, {"t": "2025-11-02T16:03:00", "gpd": 436.1, "segIndex": 0}, {"t": "2025-11-04T08:08:00", "gpd": 420.9, "segIndex": 0}, {"t": "2025-11-04T17:22:00", "gpd": 415.1, "segIndex": 0}, {"t": "2025-11-05T15:14:00", "gpd": 409.4, "segIndex": 0}, {"t": "2025-11-07T17:38:00", "gpd": 406.4, "segIndex": 0}, {"t": "2025-11-10T12:11:00", "gpd": 403.4, "segIndex": 0}, {"t": "2025-11-12T15:07:00", "gpd": 400.9, "segIndex": 0}, {"t": "2025-11-13T08:14:00", "gpd": 400.0, "segIndex": 0}, {"t": "2025-11-16T11:52:00", "gpd": 390.8, "segIndex": 0}, {"t": "2025-11-16T15:43:00", "gpd": 390.8, "segIndex": 0}, {"t": "2025-11-17T09:02:00", "gpd": 390.8, "segIndex": 0}, {"t": "2025-11-17T11:47:00", "gpd": 390.2, "segIndex": 0}, {"t": "2025-11-18T08:28:00", "gpd": 389.9, "segIndex": 0}, {"t": "2025-11-19T09:30:00", "gpd": 389.9, "segIndex": 0}, {"t": "2025-11-19T17:36:00", "gpd": 389.4, "segIndex": 0}, {"t": "2025-11-20T08:46:00", "gpd": 389.4, "segIndex": 0}, {"t": "2025-11-21T10:30:00", "gpd": 387.7, "segIndex": 0}, {"t": "2025-11-22T14:23:00", "gpd": 386.6, "segIndex": 0}, {"t": "2025-11-23T14:53:00", "gpd": 385.5, "segIndex": 0}, {"t": "2025-11-25T15:12:00", "gpd": 385.5, "segIndex": 0}, {"t": "2025-11-26T11:40:00", "gpd": 384.5, "segIndex": 0}, {"t": "2025-11-28T15:18:00", "gpd": 381.9, "segIndex": 0}, {"t": "2025-11-29T17:20:00", "gpd": 384.5, "segIndex": 0}, {"t": "2025-11-30T17:01:00", "gpd": 381.9, "segIndex": 0}, {"t": "2025-12-01T17:53:00", "gpd": 380.1, "segIndex": 0}, {"t": "2025-12-02T11:59:00", "gpd": 380.1, "segIndex": 0}, {"t": "2025-12-04T09:50:00", "gpd": 379.6, "segIndex": 0}, {"t": "2025-12-07T11:27:00", "gpd": 379.6, "segIndex": 0}, {"t": "2025-12-10T15:21:00", "gpd": 379.6, "segIndex": 0}, {"t": "2025-12-20T10:57:00", "gpd": 377.1, "segIndex": 0}, {"t": "2026-01-07T15:15:00", "gpd": 377.1, "segIndex": 0}, {"t": "2026-01-24T23:24:00", "gpd": 377.1, "segIndex": 0}, {"t": "2026-02-07T18:19:00", "gpd": 377.1, "segIndex": 0}, {"t": "2026-02-11T15:29:00", "gpd": 377.1, "segIndex": 0}, {"t": "2026-03-22T16:07:00", "gpd": 374.1, "segIndex": 0}, {"t": "2026-06-10T20:32:00", "gpd": 391.3, "segIndex": 1}, {"t": "2026-06-11T09:02:00", "gpd": 392.6, "segIndex": 1}, {"t": "2026-06-12T16:33:00", "gpd": 391.3, "segIndex": 1}, {"t": "2026-06-14T12:07:00", "gpd": 391.0, "segIndex": 1}, {"t": "2026-06-15T09:56:00", "gpd": 390.7, "segIndex": 1}, {"t": "2026-06-17T19:12:00", "gpd": 391.0, "segIndex": 1}, {"t": "2026-06-23T18:39:00", "gpd": 391.3, "segIndex": 1}, {"t": "2026-06-30T15:23:00", "gpd": 393.8, "segIndex": 1}, {"t": "2026-08-27T11:05:00", "gpd": 316.0, "segIndex": 2}, {"t": "2026-09-03T15:39:00", "gpd": 298.1, "segIndex": 2}, {"t": "2026-09-08T10:43:00", "gpd": 492.5, "segIndex": 2}, {"t": "2026-09-09T10:21:00", "gpd": 484.2, "segIndex": 2}, {"t": "2026-09-12T10:58:00", "gpd": 476.0, "segIndex": 2}, {"t": "2026-09-16T09:52:00", "gpd": 468.1, "segIndex": 2}, {"t": "2026-09-16T21:09:00", "gpd": 460.3, "segIndex": 2}, {"t": "2026-09-17T09:31:00", "gpd": 451.3, "segIndex": 2}, {"t": "2026-09-18T11:51:00", "gpd": 442.3, "segIndex": 2}, {"t": "2026-09-19T11:08:00", "gpd": 439.2, "segIndex": 2}], "events": [{"t": "2025-09-27T09:34:00", "label": "Lowered well pump 80'. set pump saver to 30"}, {"t": "2025-09-29T19:27:00", "label": "Set pump saver to 75"}, {"t": "2025-10-02T17:46:00", "label": "Set pump saver to 250, per Jared's rec."}, {"t": "2025-11-01T10:18:00", "label": "New Pump, Lowered 30 ft"}, {"t": "2026-09-07T14:46:00", "label": "Replace Faulty Pump Saver"}], "excludedLow": [{"t": "2025-07-08T09:08:00", "gpd": 196.3}, {"t": "2025-07-11T09:29:00", "gpd": 165.6}, {"t": "2025-12-12T18:21:00", "gpd": 69.9}, {"t": "2026-01-02T10:53:00", "gpd": 166.6}, {"t": "2026-01-13T14:42:00", "gpd": 199.6}, {"t": "2026-01-22T08:45:00", "gpd": 145.6}, {"t": "2026-02-02T17:28:00", "gpd": 0.0}, {"t": "2026-02-18T10:00:00", "gpd": 190.1}, {"t": "2026-02-26T08:11:00", "gpd": 52.2}, {"t": "2026-06-03T19:00:00", "gpd": 118.6}, {"t": "2026-06-29T09:25:00", "gpd": 150.4}, {"t": "2026-08-28T12:11:00", "gpd": 0.0}, {"t": "2026-09-05T11:45:00", "gpd": 110.8}, {"t": "2026-09-06T10:00:00", "gpd": 0.0}], "restSpikeMax": 600, "lowCut": 200, "monthly": [{"month": "2025-06", "t": "2025-06-01T00:00:00", "reading": null, "estimated": false, "lowConfidence": false, "sourceNote": null, "pumped": null, "pumpedEstimated": false}, {"month": "2025-07", "t": "2025-07-01T00:00:00", "reading": 435200.3, "estimated": true, "lowConfidence": false, "sourceNote": "from the Jun 30 and Jul 1 readings", "pumped": 8836.1, "pumpedEstimated": true}, {"month": "2025-08", "t": "2025-08-01T00:00:00", "reading": 444036.4, "estimated": true, "lowConfidence": false, "sourceNote": "from the Jul 31 and Aug 1 readings", "pumped": 8206.8, "pumpedEstimated": true}, {"month": "2025-09", "t": "2025-09-01T00:00:00", "reading": 452243.2, "estimated": true, "lowConfidence": false, "sourceNote": "from the Aug 27 and Sep 1 readings", "pumped": 7992.9, "pumpedEstimated": true}, {"month": "2025-10", "t": "2025-10-01T00:00:00", "reading": 460236.1, "estimated": true, "lowConfidence": false, "sourceNote": "from the Sep 29 and Oct 1 readings", "pumped": 9523.6, "pumpedEstimated": true}, {"month": "2025-11", "t": "2025-11-01T00:00:00", "reading": 469759.7, "estimated": true, "lowConfidence": false, "sourceNote": "from the Oct 31 and Nov 1 readings", "pumped": 11777.6, "pumpedEstimated": true}, {"month": "2025-12", "t": "2025-12-01T00:00:00", "reading": 481537.3, "estimated": true, "lowConfidence": false, "sourceNote": "from the Nov 30 and Dec 1 readings", "pumped": 7846.6, "pumpedEstimated": true}, {"month": "2026-01", "t": "2026-01-01T00:00:00", "reading": 489383.9, "estimated": true, "lowConfidence": false, "sourceNote": "from the Dec 20 '25 and Jan 2 '26 readings", "pumped": 5005.2, "pumpedEstimated": true}, {"month": "2026-02", "t": "2026-02-01T00:00:00", "reading": 494389.1, "estimated": true, "lowConfidence": false, "sourceNote": "from the Jan 24 and Feb 2 readings", "pumped": 6296.1, "pumpedEstimated": true}, {"month": "2026-03", "t": "2026-03-01T00:00:00", "reading": 500685.2, "estimated": true, "lowConfidence": false, "sourceNote": "from the Feb 26 and Mar 22 readings", "pumped": 5451.9, "pumpedEstimated": true}, {"month": "2026-04", "t": "2026-04-01T00:00:00", "reading": 506137.1, "estimated": true, "lowConfidence": true, "sourceNote": "from the Mar 22 and Jun 3 readings", "pumped": 3558.9, "pumpedEstimated": true}, {"month": "2026-05", "t": "2026-05-01T00:00:00", "reading": 509696.0, "estimated": true, "lowConfidence": true, "sourceNote": "from the Mar 22 and Jun 3 readings", "pumped": 3677.4, "pumpedEstimated": true}, {"month": "2026-06", "t": "2026-06-01T00:00:00", "reading": 513373.4, "estimated": true, "lowConfidence": true, "sourceNote": "from the Mar 22 and Jun 3 readings", "pumped": 10377.9, "pumpedEstimated": true}, {"month": "2026-07", "t": "2026-07-01T00:00:00", "reading": 523751.3, "estimated": true, "lowConfidence": true, "sourceNote": "from the Jun 30 and Aug 27 readings", "pumped": 9795.9, "pumpedEstimated": true}, {"month": "2026-08", "t": "2026-08-01T00:00:00", "reading": 533547.2, "estimated": true, "lowConfidence": true, "sourceNote": "from the Jun 30 and Aug 27 readings", "pumped": 9947.5, "pumpedEstimated": true}, {"month": "2026-09", "t": "2026-09-01T00:00:00", "reading": 543494.7, "estimated": true, "lowConfidence": false, "sourceNote": "from the Aug 29 and Sep 3 readings", "pumped": null, "pumpedEstimated": false}]}, "pool": {"points": [{"t": "2024-10-10T00:00:00", "gpd": 89.0, "segIndex": 0}, {"t": "2024-10-12T00:00:00", "gpd": 1.0, "segIndex": 0}, {"t": "2024-10-13T00:00:00", "gpd": 583.0, "segIndex": 0}, {"t": "2024-10-14T00:00:00", "gpd": 644.0, "segIndex": 0}, {"t": "2024-10-19T00:00:00", "gpd": 122.0, "segIndex": 0}, {"t": "2024-10-20T00:00:00", "gpd": 610.0, "segIndex": 0}, {"t": "2024-10-21T00:00:00", "gpd": 617.0, "segIndex": 0}, {"t": "2024-10-24T00:00:00", "gpd": 295.3, "segIndex": 0}, {"t": "2024-10-25T00:00:00", "gpd": 766.0, "segIndex": 0}, {"t": "2024-10-27T00:00:00", "gpd": 477.0, "segIndex": 0}, {"t": "2024-10-28T00:00:00", "gpd": 298.0, "segIndex": 0}, {"t": "2024-10-29T00:00:00", "gpd": 286.0, "segIndex": 0}, {"t": "2024-10-30T00:00:00", "gpd": 593.0, "segIndex": 0}, {"t": "2024-11-03T00:00:00", "gpd": 274.8, "segIndex": 0}, {"t": "2024-11-05T00:00:00", "gpd": 266.0, "segIndex": 0}, {"t": "2024-11-10T00:00:00", "gpd": 157.2, "segIndex": 0}, {"t": "2024-11-17T00:00:00", "gpd": 173.7, "segIndex": 0}, {"t": "2024-11-20T00:00:00", "gpd": 151.0, "segIndex": 0}, {"t": "2024-11-21T00:00:00", "gpd": 1012.0, "segIndex": 0}, {"t": "2024-11-22T00:00:00", "gpd": 838.0, "segIndex": 0}, {"t": "2025-01-06T00:00:00", "gpd": 146.3, "segIndex": 1}, {"t": "2025-01-27T00:00:00", "gpd": 25.2, "segIndex": 1}, {"t": "2025-01-28T00:00:00", "gpd": 859.0, "segIndex": 1}, {"t": "2025-02-24T00:00:00", "gpd": 145.6, "segIndex": 1}, {"t": "2025-02-25T00:00:00", "gpd": 318.0, "segIndex": 1}, {"t": "2025-02-26T00:00:00", "gpd": 477.0, "segIndex": 1}, {"t": "2025-02-28T00:00:00", "gpd": 239.0, "segIndex": 1}, {"t": "2025-03-01T00:00:00", "gpd": 477.0, "segIndex": 1}, {"t": "2025-03-02T00:00:00", "gpd": 240.0, "segIndex": 1}, {"t": "2025-03-03T00:00:00", "gpd": 240.0, "segIndex": 1}, {"t": "2025-03-04T00:00:00", "gpd": 438.0, "segIndex": 1}, {"t": "2025-03-05T00:00:00", "gpd": 280.0, "segIndex": 1}, {"t": "2025-03-07T00:00:00", "gpd": 281.0, "segIndex": 1}, {"t": "2025-03-10T00:00:00", "gpd": 214.0, "segIndex": 1}, {"t": "2025-03-12T00:00:00", "gpd": 320.0, "segIndex": 1}, {"t": "2025-03-14T00:00:00", "gpd": 320.0, "segIndex": 1}, {"t": "2025-03-24T00:00:00", "gpd": 342.7, "segIndex": 1}, {"t": "2025-03-25T00:00:00", "gpd": 320.0, "segIndex": 1}, {"t": "2025-03-28T00:00:00", "gpd": 279.7, "segIndex": 1}, {"t": "2025-03-31T00:00:00", "gpd": 360.3, "segIndex": 1}, {"t": "2025-04-01T00:00:00", "gpd": 359.0, "segIndex": 1}, {"t": "2025-04-02T00:00:00", "gpd": 335.0, "segIndex": 1}, {"t": "2025-04-03T00:00:00", "gpd": 336.0, "segIndex": 1}, {"t": "2025-04-04T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-04-05T00:00:00", "gpd": 475.0, "segIndex": 1}, {"t": "2025-04-07T00:00:00", "gpd": 138.5, "segIndex": 1}, {"t": "2025-04-08T00:00:00", "gpd": 578.0, "segIndex": 1}, {"t": "2025-04-09T00:00:00", "gpd": 516.0, "segIndex": 1}, {"t": "2025-04-11T00:00:00", "gpd": 358.5, "segIndex": 1}, {"t": "2025-04-12T00:00:00", "gpd": 358.0, "segIndex": 1}, {"t": "2025-04-13T00:00:00", "gpd": 360.0, "segIndex": 1}, {"t": "2025-04-14T00:00:00", "gpd": 476.0, "segIndex": 1}, {"t": "2025-04-15T00:00:00", "gpd": 366.0, "segIndex": 1}, {"t": "2025-04-17T00:00:00", "gpd": 351.5, "segIndex": 1}, {"t": "2025-04-18T00:00:00", "gpd": 354.0, "segIndex": 1}, {"t": "2025-04-20T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-04-22T00:00:00", "gpd": 513.0, "segIndex": 1}, {"t": "2025-04-23T00:00:00", "gpd": 390.0, "segIndex": 1}, {"t": "2025-04-26T00:00:00", "gpd": 350.0, "segIndex": 1}, {"t": "2025-04-30T00:00:00", "gpd": 351.2, "segIndex": 1}, {"t": "2025-05-02T00:00:00", "gpd": 350.0, "segIndex": 1}, {"t": "2025-05-03T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-05-05T00:00:00", "gpd": 468.0, "segIndex": 1}, {"t": "2025-05-07T00:00:00", "gpd": 346.0, "segIndex": 1}, {"t": "2025-05-12T00:00:00", "gpd": 347.8, "segIndex": 1}, {"t": "2025-05-17T00:00:00", "gpd": 316.8, "segIndex": 1}, {"t": "2025-05-19T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-05-20T00:00:00", "gpd": 787.0, "segIndex": 1}, {"t": "2025-05-21T00:00:00", "gpd": 331.0, "segIndex": 1}, {"t": "2025-05-23T00:00:00", "gpd": 390.0, "segIndex": 1}, {"t": "2025-05-25T00:00:00", "gpd": 482.0, "segIndex": 1}, {"t": "2025-05-30T00:00:00", "gpd": 250.0, "segIndex": 1}, {"t": "2025-06-09T00:00:00", "gpd": 231.7, "segIndex": 1}, {"t": "2025-06-10T00:00:00", "gpd": 1423.0, "segIndex": 1}, {"t": "2025-06-11T00:00:00", "gpd": 10.0, "segIndex": 1}, {"t": "2025-06-12T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-06-16T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-06-17T00:00:00", "gpd": 310.0, "segIndex": 1}, {"t": "2025-06-18T00:00:00", "gpd": 1395.0, "segIndex": 1}, {"t": "2025-06-19T00:00:00", "gpd": 410.0, "segIndex": 1}, {"t": "2025-06-24T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-06-25T00:00:00", "gpd": 623.0, "segIndex": 1}, {"t": "2025-06-26T00:00:00", "gpd": 469.0, "segIndex": 1}, {"t": "2025-06-27T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-06-29T00:00:00", "gpd": 535.5, "segIndex": 1}, {"t": "2025-06-30T00:00:00", "gpd": 404.0, "segIndex": 1}, {"t": "2025-07-01T00:00:00", "gpd": 374.0, "segIndex": 1}, {"t": "2025-07-02T00:00:00", "gpd": 157.0, "segIndex": 1}, {"t": "2025-07-04T00:00:00", "gpd": 311.5, "segIndex": 1}, {"t": "2025-07-05T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-07-08T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-07-09T00:00:00", "gpd": 46.0, "segIndex": 1}, {"t": "2025-07-11T00:00:00", "gpd": 240.5, "segIndex": 1}, {"t": "2025-07-12T00:00:00", "gpd": 460.0, "segIndex": 1}, {"t": "2025-07-14T00:00:00", "gpd": 211.0, "segIndex": 1}, {"t": "2025-07-15T00:00:00", "gpd": 283.0, "segIndex": 1}, {"t": "2025-07-17T00:00:00", "gpd": 318.5, "segIndex": 1}, {"t": "2025-07-21T00:00:00", "gpd": 283.0, "segIndex": 1}, {"t": "2025-07-25T00:00:00", "gpd": 267.2, "segIndex": 1}, {"t": "2025-07-26T00:00:00", "gpd": 498.0, "segIndex": 1}, {"t": "2025-07-28T00:00:00", "gpd": 382.5, "segIndex": 1}, {"t": "2025-07-31T00:00:00", "gpd": 341.7, "segIndex": 1}, {"t": "2025-08-03T00:00:00", "gpd": 117.3, "segIndex": 1}, {"t": "2025-08-06T00:00:00", "gpd": 219.3, "segIndex": 1}, {"t": "2025-08-07T00:00:00", "gpd": 194.0, "segIndex": 1}, {"t": "2025-08-08T00:00:00", "gpd": 235.0, "segIndex": 1}, {"t": "2025-08-10T00:00:00", "gpd": 291.5, "segIndex": 1}, {"t": "2025-08-11T00:00:00", "gpd": 252.0, "segIndex": 1}, {"t": "2025-08-13T00:00:00", "gpd": 320.5, "segIndex": 1}, {"t": "2025-08-15T00:00:00", "gpd": 254.0, "segIndex": 1}, {"t": "2025-08-18T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-08-20T00:00:00", "gpd": 203.5, "segIndex": 1}, {"t": "2025-08-21T00:00:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-08-23T00:00:00", "gpd": 296.5, "segIndex": 1}, {"t": "2025-08-25T00:00:00", "gpd": 279.5, "segIndex": 1}, {"t": "2025-08-27T00:00:00", "gpd": 304.0, "segIndex": 1}, {"t": "2025-08-28T00:00:00", "gpd": 288.0, "segIndex": 1}, {"t": "2025-09-06T00:00:00", "gpd": 311.0, "segIndex": 1}, {"t": "2025-09-10T00:00:00", "gpd": 308.0, "segIndex": 1}, {"t": "2025-09-15T00:00:00", "gpd": 236.6, "segIndex": 1}, {"t": "2025-09-29T00:00:00", "gpd": 224.8, "segIndex": 1}, {"t": "2025-10-01T00:00:00", "gpd": 362.5, "segIndex": 1}, {"t": "2025-10-02T00:00:00", "gpd": 322.0, "segIndex": 1}, {"t": "2025-10-04T00:00:00", "gpd": 311.0, "segIndex": 1}, {"t": "2025-10-07T00:00:00", "gpd": 327.7, "segIndex": 1}, {"t": "2025-10-13T00:00:00", "gpd": 330.2, "segIndex": 1}, {"t": "2025-10-18T15:52:00", "gpd": 260.4, "segIndex": 1}, {"t": "2025-10-21T08:23:00", "gpd": 317.3, "segIndex": 1}, {"t": "2025-10-22T14:26:00", "gpd": 635.7, "segIndex": 1}, {"t": "2025-10-27T11:34:00", "gpd": 476.0, "segIndex": 1}, {"t": "2025-10-28T12:06:00", "gpd": 304.2, "segIndex": 1}, {"t": "2025-11-01T10:37:00", "gpd": 95.5, "segIndex": 1}, {"t": "2025-11-02T10:46:00", "gpd": 458.1, "segIndex": 1}, {"t": "2025-11-04T17:01:00", "gpd": 462.3, "segIndex": 1}, {"t": "2025-11-07T17:26:00", "gpd": 496.5, "segIndex": 1}, {"t": "2025-11-10T11:58:00", "gpd": 374.4, "segIndex": 1}, {"t": "2025-11-12T15:12:00", "gpd": 434.7, "segIndex": 1}, {"t": "2025-11-16T11:32:00", "gpd": 497.2, "segIndex": 1}, {"t": "2025-11-19T09:27:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-11-22T14:13:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-11-23T14:50:00", "gpd": 216.4, "segIndex": 1}, {"t": "2025-11-25T17:15:00", "gpd": 175.2, "segIndex": 1}, {"t": "2025-11-28T02:34:00", "gpd": 116.1, "segIndex": 1}, {"t": "2025-11-29T17:20:00", "gpd": 114.5, "segIndex": 1}, {"t": "2025-12-02T11:51:00", "gpd": 181.3, "segIndex": 1}, {"t": "2025-12-04T09:42:00", "gpd": 235.6, "segIndex": 1}, {"t": "2025-12-07T11:15:00", "gpd": 214.1, "segIndex": 1}, {"t": "2025-12-10T15:14:00", "gpd": 250.8, "segIndex": 1}, {"t": "2025-12-12T18:21:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-12-20T10:57:00", "gpd": 251.4, "segIndex": 1}, {"t": "2025-12-21T11:59:00", "gpd": 0.0, "segIndex": 1}, {"t": "2025-12-30T13:23:00", "gpd": 186.2, "segIndex": 1}, {"t": "2026-01-02T10:06:00", "gpd": 173.9, "segIndex": 1}, {"t": "2026-01-07T15:10:00", "gpd": 181.7, "segIndex": 1}, {"t": "2026-01-13T14:42:00", "gpd": 180.1, "segIndex": 1}, {"t": "2026-01-22T08:45:00", "gpd": 139.1, "segIndex": 1}, {"t": "2026-01-24T23:24:00", "gpd": 293.8, "segIndex": 1}, {"t": "2026-02-02T17:16:00", "gpd": 1.4, "segIndex": 1}, {"t": "2026-02-07T18:19:00", "gpd": 333.0, "segIndex": 1}, {"t": "2026-02-11T15:11:00", "gpd": 185.8, "segIndex": 1}, {"t": "2026-02-18T08:14:00", "gpd": 195.2, "segIndex": 1}, {"t": "2026-02-26T08:11:00", "gpd": 0.0, "segIndex": 1}, {"t": "2026-03-22T15:16:00", "gpd": 191.1, "segIndex": 1}, {"t": "2026-04-08T15:09:00", "gpd": 130.7, "segIndex": 1}, {"t": "2026-04-14T08:35:00", "gpd": 158.7, "segIndex": 1}, {"t": "2026-04-16T10:19:00", "gpd": 0.0, "segIndex": 1}, {"t": "2026-04-18T13:34:00", "gpd": 0.0, "segIndex": 1}, {"t": "2026-05-18T10:31:00", "gpd": 0.0, "segIndex": 1}, {"t": "2026-05-24T18:58:00", "gpd": 48.6, "segIndex": 1}, {"t": "2026-05-26T14:08:00", "gpd": 464.0, "segIndex": 1}, {"t": "2026-05-27T14:14:00", "gpd": 512.9, "segIndex": 1}, {"t": "2026-05-30T15:13:00", "gpd": 683.2, "segIndex": 1}, {"t": "2026-06-01T18:49:00", "gpd": 556.7, "segIndex": 1}, {"t": "2026-06-08T09:35:00", "gpd": 344.9, "segIndex": 1}, {"t": "2026-06-10T20:24:00", "gpd": 374.6, "segIndex": 1}, {"t": "2026-06-12T16:24:00", "gpd": 0.0, "segIndex": 1}, {"t": "2026-06-14T12:13:00", "gpd": 250.3, "segIndex": 1}, {"t": "2026-06-16T09:28:00", "gpd": 148.2, "segIndex": 1}, {"t": "2026-06-17T19:08:00", "gpd": 300.1, "segIndex": 1}, {"t": "2026-06-23T18:24:00", "gpd": 247.4, "segIndex": 1}, {"t": "2026-06-29T09:05:00", "gpd": 66.1, "segIndex": 1}, {"t": "2026-07-05T13:21:00", "gpd": 549.9, "segIndex": 1}, {"t": "2026-07-11T11:41:00", "gpd": 476.3, "segIndex": 1}, {"t": "2026-07-20T13:58:00", "gpd": 1.4, "segIndex": 1}, {"t": "2026-07-27T08:46:00", "gpd": 0.0, "segIndex": 1}, {"t": "2026-07-28T19:15:00", "gpd": 254.8, "segIndex": 1}, {"t": "2026-08-17T10:43:00", "gpd": 278.1, "segIndex": 1}, {"t": "2026-08-27T11:03:00", "gpd": 376.8, "segIndex": 1}, {"t": "2026-08-28T12:02:00", "gpd": 311.2, "segIndex": 1}, {"t": "2026-09-03T14:40:00", "gpd": 11.3, "segIndex": 1}, {"t": "2026-09-04T22:28:00", "gpd": 610.6, "segIndex": 1}, {"t": "2026-09-07T14:41:00", "gpd": 579.7, "segIndex": 1}, {"t": "2026-09-10T10:38:00", "gpd": 319.6, "segIndex": 1}, {"t": "2026-09-11T21:04:00", "gpd": 285.1, "segIndex": 1}, {"t": "2026-09-16T09:40:00", "gpd": 271.4, "segIndex": 1}, {"t": "2026-09-18T10:34:00", "gpd": 415.1, "segIndex": 1}, {"t": "2026-09-19T10:41:00", "gpd": 596.1, "segIndex": 1}], "trend": [{"t": "2024-10-10T00:00:00", "gpd": 89.0, "segIndex": 0}, {"t": "2024-10-12T00:00:00", "gpd": 45.0, "segIndex": 0}, {"t": "2024-10-13T00:00:00", "gpd": 89.0, "segIndex": 0}, {"t": "2024-10-14T00:00:00", "gpd": 336.0, "segIndex": 0}, {"t": "2024-10-19T00:00:00", "gpd": 122.0, "segIndex": 0}, {"t": "2024-10-20T00:00:00", "gpd": 352.5, "segIndex": 0}, {"t": "2024-10-21T00:00:00", "gpd": 583.0, "segIndex": 0}, {"t": "2024-10-24T00:00:00", "gpd": 583.0, "segIndex": 0}, {"t": "2024-10-25T00:00:00", "gpd": 610.0, "segIndex": 0}, {"t": "2024-10-27T00:00:00", "gpd": 610.0, "segIndex": 0}, {"t": "2024-10-28T00:00:00", "gpd": 477.0, "segIndex": 0}, {"t": "2024-10-29T00:00:00", "gpd": 477.0, "segIndex": 0}, {"t": "2024-10-30T00:00:00", "gpd": 477.0, "segIndex": 0}, {"t": "2024-11-03T00:00:00", "gpd": 298.0, "segIndex": 0}, {"t": "2024-11-05T00:00:00", "gpd": 298.0, "segIndex": 0}, {"t": "2024-11-10T00:00:00", "gpd": 286.0, "segIndex": 0}, {"t": "2024-11-17T00:00:00", "gpd": 274.8, "segIndex": 0}, {"t": "2024-11-20T00:00:00", "gpd": 266.0, "segIndex": 0}, {"t": "2024-11-21T00:00:00", "gpd": 266.0, "segIndex": 0}, {"t": "2024-11-22T00:00:00", "gpd": 266.0, "segIndex": 0}, {"t": "2025-01-06T00:00:00", "gpd": 146.3, "segIndex": 1}, {"t": "2025-01-27T00:00:00", "gpd": 85.8, "segIndex": 1}, {"t": "2025-01-28T00:00:00", "gpd": 146.3, "segIndex": 1}, {"t": "2025-02-24T00:00:00", "gpd": 146.0, "segIndex": 1}, {"t": "2025-02-25T00:00:00", "gpd": 146.3, "segIndex": 1}, {"t": "2025-02-26T00:00:00", "gpd": 232.2, "segIndex": 1}, {"t": "2025-02-28T00:00:00", "gpd": 239.0, "segIndex": 1}, {"t": "2025-03-01T00:00:00", "gpd": 318.0, "segIndex": 1}, {"t": "2025-03-02T00:00:00", "gpd": 318.0, "segIndex": 1}, {"t": "2025-03-03T00:00:00", "gpd": 240.0, "segIndex": 1}, {"t": "2025-03-04T00:00:00", "gpd": 318.0, "segIndex": 1}, {"t": "2025-03-05T00:00:00", "gpd": 280.0, "segIndex": 1}, {"t": "2025-03-07T00:00:00", "gpd": 280.0, "segIndex": 1}, {"t": "2025-03-10T00:00:00", "gpd": 280.0, "segIndex": 1}, {"t": "2025-03-12T00:00:00", "gpd": 280.0, "segIndex": 1}, {"t": "2025-03-14T00:00:00", "gpd": 281.0, "segIndex": 1}, {"t": "2025-03-24T00:00:00", "gpd": 320.0, "segIndex": 1}, {"t": "2025-03-25T00:00:00", "gpd": 320.0, "segIndex": 1}, {"t": "2025-03-28T00:00:00", "gpd": 320.0, "segIndex": 1}, {"t": "2025-03-31T00:00:00", "gpd": 320.0, "segIndex": 1}, {"t": "2025-04-01T00:00:00", "gpd": 320.0, "segIndex": 1}, {"t": "2025-04-02T00:00:00", "gpd": 335.0, "segIndex": 1}, {"t": "2025-04-03T00:00:00", "gpd": 336.0, "segIndex": 1}, {"t": "2025-04-04T00:00:00", "gpd": 335.0, "segIndex": 1}, {"t": "2025-04-05T00:00:00", "gpd": 336.0, "segIndex": 1}, {"t": "2025-04-07T00:00:00", "gpd": 336.0, "segIndex": 1}, {"t": "2025-04-08T00:00:00", "gpd": 336.0, "segIndex": 1}, {"t": "2025-04-09T00:00:00", "gpd": 336.0, "segIndex": 1}, {"t": "2025-04-11T00:00:00", "gpd": 358.5, "segIndex": 1}, {"t": "2025-04-12T00:00:00", "gpd": 358.5, "segIndex": 1}, {"t": "2025-04-13T00:00:00", "gpd": 360.0, "segIndex": 1}, {"t": "2025-04-14T00:00:00", "gpd": 360.0, "segIndex": 1}, {"t": "2025-04-15T00:00:00", "gpd": 366.0, "segIndex": 1}, {"t": "2025-04-17T00:00:00", "gpd": 360.0, "segIndex": 1}, {"t": "2025-04-18T00:00:00", "gpd": 358.5, "segIndex": 1}, {"t": "2025-04-20T00:00:00", "gpd": 358.0, "segIndex": 1}, {"t": "2025-04-22T00:00:00", "gpd": 360.0, "segIndex": 1}, {"t": "2025-04-23T00:00:00", "gpd": 366.0, "segIndex": 1}, {"t": "2025-04-26T00:00:00", "gpd": 354.0, "segIndex": 1}, {"t": "2025-04-30T00:00:00", "gpd": 351.5, "segIndex": 1}, {"t": "2025-05-02T00:00:00", "gpd": 351.2, "segIndex": 1}, {"t": "2025-05-03T00:00:00", "gpd": 350.0, "segIndex": 1}, {"t": "2025-05-05T00:00:00", "gpd": 351.2, "segIndex": 1}, {"t": "2025-05-07T00:00:00", "gpd": 350.0, "segIndex": 1}, {"t": "2025-05-12T00:00:00", "gpd": 350.0, "segIndex": 1}, {"t": "2025-05-17T00:00:00", "gpd": 347.8, "segIndex": 1}, {"t": "2025-05-19T00:00:00", "gpd": 346.0, "segIndex": 1}, {"t": "2025-05-20T00:00:00", "gpd": 346.0, "segIndex": 1}, {"t": "2025-05-21T00:00:00", "gpd": 346.0, "segIndex": 1}, {"t": "2025-05-23T00:00:00", "gpd": 346.0, "segIndex": 1}, {"t": "2025-05-25T00:00:00", "gpd": 347.8, "segIndex": 1}, {"t": "2025-05-30T00:00:00", "gpd": 331.0, "segIndex": 1}, {"t": "2025-06-09T00:00:00", "gpd": 331.0, "segIndex": 1}, {"t": "2025-06-10T00:00:00", "gpd": 390.0, "segIndex": 1}, {"t": "2025-06-11T00:00:00", "gpd": 331.0, "segIndex": 1}, {"t": "2025-06-12T00:00:00", "gpd": 250.0, "segIndex": 1}, {"t": "2025-06-16T00:00:00", "gpd": 231.7, "segIndex": 1}, {"t": "2025-06-17T00:00:00", "gpd": 231.7, "segIndex": 1}, {"t": "2025-06-18T00:00:00", "gpd": 231.7, "segIndex": 1}, {"t": "2025-06-19T00:00:00", "gpd": 310.0, "segIndex": 1}, {"t": "2025-06-24T00:00:00", "gpd": 10.0, "segIndex": 1}, {"t": "2025-06-25T00:00:00", "gpd": 310.0, "segIndex": 1}, {"t": "2025-06-26T00:00:00", "gpd": 410.0, "segIndex": 1}, {"t": "2025-06-27T00:00:00", "gpd": 410.0, "segIndex": 1}, {"t": "2025-06-29T00:00:00", "gpd": 469.0, "segIndex": 1}, {"t": "2025-06-30T00:00:00", "gpd": 410.0, "segIndex": 1}, {"t": "2025-07-01T00:00:00", "gpd": 404.0, "segIndex": 1}, {"t": "2025-07-02T00:00:00", "gpd": 404.0, "segIndex": 1}, {"t": "2025-07-04T00:00:00", "gpd": 374.0, "segIndex": 1}, {"t": "2025-07-05T00:00:00", "gpd": 311.5, "segIndex": 1}, {"t": "2025-07-08T00:00:00", "gpd": 311.5, "segIndex": 1}, {"t": "2025-07-09T00:00:00", "gpd": 157.0, "segIndex": 1}, {"t": "2025-07-11T00:00:00", "gpd": 157.0, "segIndex": 1}, {"t": "2025-07-12T00:00:00", "gpd": 157.0, "segIndex": 1}, {"t": "2025-07-14T00:00:00", "gpd": 211.0, "segIndex": 1}, {"t": "2025-07-15T00:00:00", "gpd": 211.0, "segIndex": 1}, {"t": "2025-07-17T00:00:00", "gpd": 240.5, "segIndex": 1}, {"t": "2025-07-21T00:00:00", "gpd": 283.0, "segIndex": 1}, {"t": "2025-07-25T00:00:00", "gpd": 283.0, "segIndex": 1}, {"t": "2025-07-26T00:00:00", "gpd": 283.0, "segIndex": 1}, {"t": "2025-07-28T00:00:00", "gpd": 283.0, "segIndex": 1}, {"t": "2025-07-31T00:00:00", "gpd": 318.5, "segIndex": 1}, {"t": "2025-08-03T00:00:00", "gpd": 318.5, "segIndex": 1}, {"t": "2025-08-06T00:00:00", "gpd": 283.0, "segIndex": 1}, {"t": "2025-08-07T00:00:00", "gpd": 267.2, "segIndex": 1}, {"t": "2025-08-08T00:00:00", "gpd": 235.0, "segIndex": 1}, {"t": "2025-08-10T00:00:00", "gpd": 235.0, "segIndex": 1}, {"t": "2025-08-11T00:00:00", "gpd": 235.0, "segIndex": 1}, {"t": "2025-08-13T00:00:00", "gpd": 235.0, "segIndex": 1}, {"t": "2025-08-15T00:00:00", "gpd": 252.0, "segIndex": 1}, {"t": "2025-08-18T00:00:00", "gpd": 252.0, "segIndex": 1}, {"t": "2025-08-20T00:00:00", "gpd": 252.0, "segIndex": 1}, {"t": "2025-08-21T00:00:00", "gpd": 252.0, "segIndex": 1}, {"t": "2025-08-23T00:00:00", "gpd": 252.0, "segIndex": 1}, {"t": "2025-08-25T00:00:00", "gpd": 254.0, "segIndex": 1}, {"t": "2025-08-27T00:00:00", "gpd": 254.0, "segIndex": 1}, {"t": "2025-08-28T00:00:00", "gpd": 279.5, "segIndex": 1}, {"t": "2025-09-06T00:00:00", "gpd": 288.0, "segIndex": 1}, {"t": "2025-09-10T00:00:00", "gpd": 296.5, "segIndex": 1}, {"t": "2025-09-15T00:00:00", "gpd": 296.5, "segIndex": 1}, {"t": "2025-09-29T00:00:00", "gpd": 288.0, "segIndex": 1}, {"t": "2025-10-01T00:00:00", "gpd": 304.0, "segIndex": 1}, {"t": "2025-10-02T00:00:00", "gpd": 308.0, "segIndex": 1}, {"t": "2025-10-04T00:00:00", "gpd": 311.0, "segIndex": 1}, {"t": "2025-10-07T00:00:00", "gpd": 311.0, "segIndex": 1}, {"t": "2025-10-13T00:00:00", "gpd": 322.0, "segIndex": 1}, {"t": "2025-10-18T15:52:00", "gpd": 322.0, "segIndex": 1}, {"t": "2025-10-21T08:23:00", "gpd": 322.0, "segIndex": 1}, {"t": "2025-10-22T14:26:00", "gpd": 322.0, "segIndex": 1}, {"t": "2025-10-27T11:34:00", "gpd": 327.7, "segIndex": 1}, {"t": "2025-10-28T12:06:00", "gpd": 327.7, "segIndex": 1}, {"t": "2025-11-01T10:37:00", "gpd": 317.3, "segIndex": 1}, {"t": "2025-11-02T10:46:00", "gpd": 317.3, "segIndex": 1}, {"t": "2025-11-04T17:01:00", "gpd": 458.1, "segIndex": 1}, {"t": "2025-11-07T17:26:00", "gpd": 462.3, "segIndex": 1}, {"t": "2025-11-10T11:58:00", "gpd": 458.1, "segIndex": 1}, {"t": "2025-11-12T15:12:00", "gpd": 434.7, "segIndex": 1}, {"t": "2025-11-16T11:32:00", "gpd": 458.1, "segIndex": 1}, {"t": "2025-11-19T09:27:00", "gpd": 458.1, "segIndex": 1}, {"t": "2025-11-22T14:13:00", "gpd": 434.7, "segIndex": 1}, {"t": "2025-11-23T14:50:00", "gpd": 374.4, "segIndex": 1}, {"t": "2025-11-25T17:15:00", "gpd": 216.4, "segIndex": 1}, {"t": "2025-11-28T02:34:00", "gpd": 175.2, "segIndex": 1}, {"t": "2025-11-29T17:20:00", "gpd": 116.1, "segIndex": 1}, {"t": "2025-12-02T11:51:00", "gpd": 116.1, "segIndex": 1}, {"t": "2025-12-04T09:42:00", "gpd": 175.2, "segIndex": 1}, {"t": "2025-12-07T11:15:00", "gpd": 181.3, "segIndex": 1}, {"t": "2025-12-10T15:14:00", "gpd": 181.3, "segIndex": 1}, {"t": "2025-12-12T18:21:00", "gpd": 181.3, "segIndex": 1}, {"t": "2025-12-20T10:57:00", "gpd": 214.1, "segIndex": 1}, {"t": "2025-12-21T11:59:00", "gpd": 214.1, "segIndex": 1}, {"t": "2025-12-30T13:23:00", "gpd": 214.1, "segIndex": 1}, {"t": "2026-01-02T10:06:00", "gpd": 186.2, "segIndex": 1}, {"t": "2026-01-07T15:10:00", "gpd": 181.7, "segIndex": 1}, {"t": "2026-01-13T14:42:00", "gpd": 180.1, "segIndex": 1}, {"t": "2026-01-22T08:45:00", "gpd": 180.1, "segIndex": 1}, {"t": "2026-01-24T23:24:00", "gpd": 180.1, "segIndex": 1}, {"t": "2026-02-02T17:16:00", "gpd": 180.1, "segIndex": 1}, {"t": "2026-02-07T18:19:00", "gpd": 180.1, "segIndex": 1}, {"t": "2026-02-11T15:11:00", "gpd": 181.7, "segIndex": 1}, {"t": "2026-02-18T08:14:00", "gpd": 185.8, "segIndex": 1}, {"t": "2026-02-26T08:11:00", "gpd": 185.8, "segIndex": 1}, {"t": "2026-03-22T15:16:00", "gpd": 191.1, "segIndex": 1}, {"t": "2026-04-08T15:09:00", "gpd": 185.8, "segIndex": 1}, {"t": "2026-04-14T08:35:00", "gpd": 185.8, "segIndex": 1}, {"t": "2026-04-16T10:19:00", "gpd": 158.7, "segIndex": 1}, {"t": "2026-04-18T13:34:00", "gpd": 130.7, "segIndex": 1}, {"t": "2026-05-18T10:31:00", "gpd": 0.0, "segIndex": 1}, {"t": "2026-05-24T18:58:00", "gpd": 48.6, "segIndex": 1}, {"t": "2026-05-26T14:08:00", "gpd": 48.6, "segIndex": 1}, {"t": "2026-05-27T14:14:00", "gpd": 48.6, "segIndex": 1}, {"t": "2026-05-30T15:13:00", "gpd": 48.6, "segIndex": 1}, {"t": "2026-06-01T18:49:00", "gpd": 464.0, "segIndex": 1}, {"t": "2026-06-08T09:35:00", "gpd": 464.0, "segIndex": 1}, {"t": "2026-06-10T20:24:00", "gpd": 464.0, "segIndex": 1}, {"t": "2026-06-12T16:24:00", "gpd": 464.0, "segIndex": 1}, {"t": "2026-06-14T12:13:00", "gpd": 374.6, "segIndex": 1}, {"t": "2026-06-16T09:28:00", "gpd": 344.9, "segIndex": 1}, {"t": "2026-06-17T19:08:00", "gpd": 300.1, "segIndex": 1}, {"t": "2026-06-23T18:24:00", "gpd": 250.3, "segIndex": 1}, {"t": "2026-06-29T09:05:00", "gpd": 247.4, "segIndex": 1}, {"t": "2026-07-05T13:21:00", "gpd": 247.4, "segIndex": 1}, {"t": "2026-07-11T11:41:00", "gpd": 250.3, "segIndex": 1}, {"t": "2026-07-20T13:58:00", "gpd": 247.4, "segIndex": 1}, {"t": "2026-07-27T08:46:00", "gpd": 247.4, "segIndex": 1}, {"t": "2026-07-28T19:15:00", "gpd": 247.4, "segIndex": 1}, {"t": "2026-08-17T10:43:00", "gpd": 254.8, "segIndex": 1}, {"t": "2026-08-27T11:03:00", "gpd": 278.1, "segIndex": 1}, {"t": "2026-08-28T12:02:00", "gpd": 278.1, "segIndex": 1}, {"t": "2026-09-03T14:40:00", "gpd": 254.8, "segIndex": 1}, {"t": "2026-09-04T22:28:00", "gpd": 278.1, "segIndex": 1}, {"t": "2026-09-07T14:41:00", "gpd": 311.2, "segIndex": 1}, {"t": "2026-09-10T10:38:00", "gpd": 319.6, "segIndex": 1}, {"t": "2026-09-11T21:04:00", "gpd": 319.6, "segIndex": 1}, {"t": "2026-09-16T09:40:00", "gpd": 311.2, "segIndex": 1}, {"t": "2026-09-18T10:34:00", "gpd": 319.6, "segIndex": 1}, {"t": "2026-09-19T10:41:00", "gpd": 415.1, "segIndex": 1}], "events": [], "excludedLow": [], "excludedShort": [{"t": "2025-03-10T12:00:00", "gpd": 1486.0, "hours": 12.0}, {"t": "2025-03-11T00:00:00", "gpd": 796.0, "hours": 12.0}, {"t": "2025-10-23T08:14:00", "gpd": 902.0, "hours": 17.8}, {"t": "2025-11-05T15:07:00", "gpd": 323.6, "hours": 22.1}, {"t": "2025-11-17T09:06:00", "gpd": 1218.5, "hours": 21.57}, {"t": "2025-11-18T08:25:00", "gpd": 1.0, "hours": 23.32}, {"t": "2025-11-19T16:10:00", "gpd": 696.8, "hours": 6.72}, {"t": "2025-11-20T08:13:00", "gpd": 1812.3, "hours": 16.05}, {"t": "2025-11-20T17:04:00", "gpd": 0.0, "hours": 8.85}, {"t": "2025-11-21T10:29:00", "gpd": 0.0, "hours": 17.42}, {"t": "2025-11-26T11:55:00", "gpd": 119.6, "hours": 18.67}, {"t": "2025-11-30T16:58:00", "gpd": 187.9, "hours": 23.63}, {"t": "2026-02-03T09:58:00", "gpd": 1878.3, "hours": 16.7}, {"t": "2026-05-25T11:39:00", "gpd": 2035.6, "hours": 16.68}, {"t": "2026-05-28T10:04:00", "gpd": 0.0, "hours": 19.83}, {"t": "2026-06-02T17:40:00", "gpd": 483.2, "hours": 22.85}, {"t": "2026-06-14T20:33:00", "gpd": 990.7, "hours": 8.33}, {"t": "2026-06-29T18:41:00", "gpd": 2435.0, "hours": 9.6}, {"t": "2026-06-30T15:33:00", "gpd": 966.1, "hours": 20.87}, {"t": "2026-07-27T10:11:00", "gpd": 12163.8, "hours": 1.42}, {"t": "2026-09-16T20:54:00", "gpd": 0.0, "hours": 11.23}, {"t": "2026-09-17T08:19:00", "gpd": 1124.7, "hours": 11.42}], "restSpikeMax": 2000, "lowCut": null, "minHours": 24}};
+
+  var WELL_DESC = 'Gallons per day pumped from the community well. Dots are individual readings; the brown line is the trend (same color as the well line on the Combined view). Details on filtering below the chart.';
+
+  var POOL_DESC = 'Gallons per day of water added to the pool. Dots are individual readings; the blue line is the trend. Details on filtering below the chart.';
+
+  var VIEWS = {
+    well: {
+      key: 'well',
+      navLabel: 'Well',
+      pageTitle: 'Water Pump from Aquifer',
+      pageDesc: WELL_DESC,
+      chartTitle: 'Gallons per day over time',
+      eventLegendLabel: 'Equipment change',
+      eventsCardTitle: 'Logged equipment changes',
+      emptyEventsText: 'No equipment changes logged yet.',
+      hasEvents: true,
+      yMax: 600,
+      yTicks: [0, 150, 300, 450, 600],
+      unit: 'gpd',
+      raw: DATA.well,
+      trendColor: 'var(--accent-well)',
+      sourceLine: 'Source: &ldquo;Well&rdquo; sheet, PUMPING LOG (Google Sheets).'
+    },
+    pool: {
+      key: 'pool',
+      navLabel: 'Pool',
+      pageTitle: 'Water Added to Pool',
+      pageDesc: POOL_DESC,
+      chartTitle: 'Gallons added per day over time',
+      eventLegendLabel: 'Logged note',
+      eventsCardTitle: 'Logged notes',
+      emptyEventsText: 'No notes logged yet.',
+      hasEvents: false,
+      yMax: 1000,
+      yTicks: [0, 250, 500, 750, 1000],
+      unit: 'gpd',
+      raw: DATA.pool,
+      trendColor: 'var(--accent)',
+      sourceLine: 'Source: &ldquo;Pool&rdquo; sheet, PUMPING LOG (Google Sheets).'
+    }
+  };
+
+  function fmtGpd(v, unit) { return Math.round(v).toLocaleString() + ' ' + unit; }
+  function fmtDate(d) {
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function fmtDateShort(d) {
+    return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+  }
+  var ORDINAL_SUFFIX = ['th', 'st', 'nd', 'rd'];
+  function ordinal(n) {
+    var v = n % 100;
+    return n + (ORDINAL_SUFFIX[(v - 20) % 10] || ORDINAL_SUFFIX[v] || ORDINAL_SUFFIX[0]);
+  }
+  var MONTH_ABBR_DOT = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'];
+  function fmtDateLong(d) {
+    // "Sep. 20th 2026" - used where an exact, unambiguous date matters
+    // (equipment-change log), since fmtDateShort's month+2-digit-year
+    // form doesn't carry a day and reads ambiguously across years.
+    return MONTH_ABBR_DOT[d.getMonth()] + ' ' + ordinal(d.getDate()) + ' ' + d.getFullYear();
+  }
+
+  // ---------- Chart geometry (constant across views) ----------
+  var svgNS = 'http://www.w3.org/2000/svg';
+  var svg = document.getElementById('chart');
+  var W = 920, H = 440;
+  var M = { top: 34, right: 16, bottom: 34, left: 46 };
+  var plotW = W - M.left - M.right;
+  var plotH = H - M.top - M.bottom;
+  var DAY_MS = 86400000;
+  var MAJOR_MIN_POINTS = 3;
+  var GAP_BAND_WIDTH = 64;
+  var PUMP_SAVER_ONLY_RE = /^set pump saver to \d/i;
+  var LABEL_R = 7;
+  var LABEL_GAP = 20;
+
+  function el(tag, attrs) {
+    var e = document.createElementNS(svgNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // ---------- State that persists across a render (reassigned, not re-declared,
+  // so the single set of interaction listeners below always sees current data) ----------
+  var points, trend, events, Y_MAX, Y_TICKS, unit, trendColor;
+  var majorBands, gapBands, pointXs, trendXs;
+  var currentView = 'well';
+
+  // ---------- Combined-view state (populated by renderCombined) ----------
+  var combinedWellTrend = [], combinedPoolTrend = [], combinedMergedXs = [];
+  var combinedTMin = 0, combinedTMax = 1, combinedCX = null, combinedCY = null;
+  var hoverDotWell, hoverDotPool;
+
+  function yScale(v) {
+    var clamped = Math.min(v, Y_MAX);
+    return M.top + plotH - (clamped / Y_MAX) * plotH;
+  }
+
+  function xScale(tms) {
+    for (var i = 0; i < majorBands.length; i++) {
+      var b = majorBands[i];
+      if (tms >= b.tStart && tms <= b.tEnd) {
+        return b.tEnd === b.tStart ? (b.xStart + b.xEnd) / 2 : b.xStart + (tms - b.tStart) / (b.tEnd - b.tStart) * b.width;
+      }
+    }
+    for (var j = 0; j < gapBands.length; j++) {
+      var g = gapBands[j];
+      if (tms >= g.tStart && tms <= g.tEnd) {
+        return g.tEnd === g.tStart ? (g.xStart + g.xEnd) / 2 : g.xStart + (tms - g.tStart) / (g.tEnd - g.tStart) * (g.xEnd - g.xStart);
+      }
+    }
+    return tms < majorBands[0].tStart ? majorBands[0].xStart : majorBands[majorBands.length - 1].xEnd;
+  }
+
+  function nearestIndex(arr, target) {
+    var lo = 0, hi = arr.length - 1;
+    while (lo < hi) {
+      var mid = (lo + hi) >> 1;
+      if (arr[mid] < target) lo = mid + 1; else hi = mid;
+    }
+    if (lo > 0 && Math.abs(arr[lo - 1] - target) < Math.abs(arr[lo] - target)) return lo - 1;
+    return lo;
+  }
+
+  function pointerToSvg(evt) {
+    var pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    var ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    return pt.matrixTransform(ctm.inverse());
+  }
+
+  var chartShell = document.getElementById('chartShell');
+  var tooltip = document.getElementById('tooltip');
+  var crosshair, hoverDotTrend;
+
+  function onMove(evt) {
+    if (currentView === 'combined') { onMoveCombined(evt); return; }
+    var p = pointerToSvg(evt);
+    if (!p || p.x < M.left || p.x > W - M.right || !pointXs.length) { hideHover(); return; }
+    var idx = nearestIndex(pointXs, p.x);
+    var rawPt = points[idx];
+    var trendIdx = nearestIndex(trendXs, p.x);
+    var trendPt = trend[trendIdx];
+
+    var x = pointXs[idx];
+    crosshair.setAttribute('x1', x);
+    crosshair.setAttribute('x2', x);
+    crosshair.setAttribute('opacity', 1);
+
+    if (trendPt) {
+      hoverDotTrend.setAttribute('cx', x);
+      hoverDotTrend.setAttribute('cy', yScale(trendPt.gpd));
+      hoverDotTrend.setAttribute('opacity', 1);
+    } else {
+      hoverDotTrend.setAttribute('opacity', 0);
+    }
+
+    var evNear = events.find(function (e) { return Math.abs(e.t.getTime() - rawPt.t.getTime()) < 43200000; });
+
+    tooltip.innerHTML = '';
+    var dateEl = document.createElement('div'); dateEl.className = 't-date'; dateEl.textContent = fmtDate(rawPt.t);
+    tooltip.appendChild(dateEl);
+
+    if (trendPt) {
+      var row1 = document.createElement('div'); row1.className = 't-row';
+      var key1 = document.createElement('span'); key1.className = 't-key'; key1.style.background = trendColor;
+      var val1 = document.createElement('span'); val1.className = 't-val'; val1.textContent = fmtGpd(trendPt.gpd, unit) + ' trend';
+      row1.appendChild(key1); row1.appendChild(val1);
+      tooltip.appendChild(row1);
+    }
+
+    var row2 = document.createElement('div'); row2.className = 't-row';
+    var key2 = document.createElement('span'); key2.className = 't-key'; key2.style.background = 'var(--raw-dot)';
+    var val2 = document.createElement('span'); val2.className = 't-val';
+    val2.textContent = fmtGpd(rawPt.gpd, unit) + ' reading' + (rawPt.gpd > Y_MAX ? ' (off scale)' : '');
+    row2.appendChild(key2); row2.appendChild(val2);
+    tooltip.appendChild(row2);
+
+    if (evNear) {
+      var noteEl = document.createElement('div'); noteEl.className = 't-note'; noteEl.textContent = evNear.label;
+      tooltip.appendChild(noteEl);
+    }
+
+    var shellRect = chartShell.getBoundingClientRect();
+    var svgRect = svg.getBoundingClientRect();
+    var pxX = svgRect.left - shellRect.left + (x / W) * svgRect.width;
+    var pxY = svgRect.top - shellRect.top + (yScale(trendPt ? trendPt.gpd : rawPt.gpd) / H) * svgRect.height;
+    tooltip.style.left = pxX + 'px';
+    tooltip.style.top = pxY + 'px';
+    tooltip.classList.add('show');
+  }
+
+  function hideHover() {
+    if (crosshair) crosshair.setAttribute('opacity', 0);
+    if (hoverDotTrend) hoverDotTrend.setAttribute('opacity', 0);
+    if (hoverDotWell) hoverDotWell.setAttribute('opacity', 0);
+    if (hoverDotPool) hoverDotPool.setAttribute('opacity', 0);
+    tooltip.classList.remove('show');
+  }
+
+  svg.addEventListener('pointermove', onMove);
+  svg.addEventListener('pointerleave', hideHover);
+
+  // ---------- Render one view into the shared DOM ----------
+  var statRow = document.getElementById('statRow');
+  var eventsList = document.getElementById('eventsList');
+  var footer = document.getElementById('footerNote');
+  var pageTitleEl = document.getElementById('pageTitle');
+  var pageDescEl = document.getElementById('pageDesc');
+  var chartCardTitleEl = document.getElementById('chartCardTitle');
+  var eventsCardTitleEl = document.getElementById('eventsCardTitle');
+  var legendEventLabelEl = document.getElementById('legendEventLabel');
+  var eventsCardEl = document.getElementById('eventsCard');
+  var legendEventItemEl = document.getElementById('legendEventItem');
+  var legendRawItemEl = document.getElementById('legendRawItem');
+  var legendTrendItemEl = document.getElementById('legendTrendItem');
+  var legendWellItemEl = document.getElementById('legendWellItem');
+  var legendPoolItemEl = document.getElementById('legendPoolItem');
+  var trendSwatchEl = document.getElementById('trendSwatch');
+  var monthlyCardEl = document.getElementById('monthlyCard');
+  var monthlyBodyEl = document.getElementById('monthlyBody');
+
+  function renderView(key) {
+    var cfg = VIEWS[key];
+    points = cfg.raw.points.map(function (p) { return { t: new Date(p.t), gpd: p.gpd, segIndex: p.segIndex }; });
+    trend  = cfg.raw.trend.map(function (p) { return { t: new Date(p.t), gpd: p.gpd, segIndex: p.segIndex }; });
+    events = cfg.raw.events.map(function (e) { return { t: new Date(e.t), label: e.label }; });
+    Y_MAX = cfg.yMax;
+    Y_TICKS = cfg.yTicks;
+    unit = cfg.unit;
+    trendColor = cfg.trendColor;
+    trendSwatchEl.style.background = trendColor;
+
+    document.querySelectorAll('.view-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-view') === key);
+    });
+    pageTitleEl.textContent = cfg.pageTitle;
+    pageDescEl.innerHTML = cfg.pageDesc;
+    chartCardTitleEl.textContent = cfg.chartTitle;
+    eventsCardTitleEl.textContent = cfg.eventsCardTitle;
+    legendEventLabelEl.textContent = cfg.eventLegendLabel;
+    eventsCardEl.style.display = cfg.hasEvents ? '' : 'none';
+    legendEventItemEl.style.display = cfg.hasEvents ? '' : 'none';
+    legendRawItemEl.style.display = '';
+    legendTrendItemEl.style.display = '';
+    legendWellItemEl.style.display = 'none';
+    legendPoolItemEl.style.display = 'none';
+
+    // ---------- Stat tiles ----------
+    statRow.style.display = '';
+    statRow.innerHTML = '';
+    if (!points.length) {
+      var emptyTile = document.createElement('div'); emptyTile.className = 'stat-tile';
+      emptyTile.textContent = 'No readings logged yet.';
+      statRow.appendChild(emptyTile);
+    } else {
+      var last = points[points.length - 1];
+      var lastTrend = trend[trend.length - 1];
+      var spanDays = Math.round((points[points.length - 1].t - points[0].t) / DAY_MS);
+      var spanMonths = (spanDays / 30.4).toFixed(0);
+      var exLen = cfg.key === 'well' ? cfg.raw.excludedLow.length : cfg.raw.excludedShort.length;
+      var exLabel = cfg.key === 'well' ? 'tank-full excluded' : 'under 24h excluded';
+
+      var thirdStat;
+      if (cfg.key === 'pool') {
+        // Year-by-year comparison (switched from a 2-year trailing-12mo
+        // %, 2026-09-19, at the user's request to see all available
+        // years even though the oldest is partial): one average per
+        // calendar year present in the trend, using whatever months that
+        // year actually has data for. 2024 only has Oct-Nov readings and
+        // 2026 is year-to-date, so both are annotated rather than shown
+        // as if they were full-year figures - still genuinely
+        // representative of usage in the months they cover, just not
+        // apples-to-apples against a complete year.
+        var MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var latestT = trend[trend.length - 1].t;
+        var byYear = {};
+        trend.forEach(function (p) {
+          var y = p.t.getFullYear();
+          (byYear[y] = byYear[y] || []).push(p);
+        });
+        var years = Object.keys(byYear).map(Number).sort(function (a, b) { return a - b; });
+        var yearBars = years.map(function (y) {
+          var pts = byYear[y];
+          var avg = pts.reduce(function (s, p) { return s + p.gpd; }, 0) / pts.length;
+          var months = pts.map(function (p) { return p.t.getMonth(); });
+          var minM = Math.min.apply(null, months), maxM = Math.max.apply(null, months);
+          var full = minM === 0 && maxM === 11;
+          var note = null;
+          if (!full) {
+            note = y === latestT.getFullYear() ? 'YTD' : MONTH_ABBR[minM] + (minM === maxM ? '' : '–' + MONTH_ABBR[maxM]);
+          }
+          return { year: y, avg: avg, n: pts.length, note: note };
+        });
+        thirdStat = { label: 'Water added by year', yearBars: yearBars };
+      } else {
+        var n14 = Math.min(14, trend.length);
+        var earlyAvg = trend.slice(0, n14).reduce(function (s, p) { return s + p.gpd; }, 0) / n14;
+        var lateAvg = trend.slice(-n14).reduce(function (s, p) { return s + p.gpd; }, 0) / n14;
+        var pctChange = (lateAvg - earlyAvg) / earlyAvg * 100;
+        thirdStat = {
+          label: 'Change since tracking began',
+          value: (pctChange >= 0 ? '+' : '') + pctChange.toFixed(0) + '%',
+          sub: Math.round(earlyAvg) + ' → ' + Math.round(lateAvg) + ' ' + unit + ' (trend)',
+          delta: pctChange >= 0 ? 'up' : 'down'
+        };
+      }
+
+      var stats = [
+        { label: 'Latest reading', value: fmtGpd(last.gpd, unit), sub: fmtDate(last.t) },
+        { label: '7-reading trend', value: lastTrend ? fmtGpd(lastTrend.gpd, unit) : '—', sub: 'current median' },
+        thirdStat,
+        {
+          label: 'Readings logged',
+          value: points.length.toLocaleString(),
+          sub: 'over ~' + spanMonths + ' mo.' + (exLen ? ' (' + exLen + ' ' + exLabel + ')' : '')
+        }
+      ];
+
+      stats.forEach(function (s) {
+        var tile = document.createElement('div');
+        tile.className = 'stat-tile';
+        var label = document.createElement('div'); label.className = 'label'; label.textContent = s.label;
+        tile.appendChild(label);
+        if (s.yearBars) {
+          var maxAvg = Math.max.apply(null, s.yearBars.map(function (yb) { return yb.avg; }).concat([1]));
+          var barsWrap = document.createElement('div'); barsWrap.className = 'year-bars';
+          s.yearBars.forEach(function (yb, ybi) {
+            var col = document.createElement('div'); col.className = 'year-bar-col';
+            // % change vs. the previous year in the list (blank placeholder, not
+            // omitted, on the first bar - keeps every column's trailing content
+            // identical so align-items:flex-end bottom-aligns the bars evenly;
+            // the old per-bar "Oct-Nov"/"YTD" note text sat AFTER the label on
+            // only some columns and threw that alignment off, which is why it's
+            // gone from here - the same info now lives in the bar's hover title).
+            var pct = document.createElement('div'); pct.className = 'year-bar-pct mono';
+            if (ybi > 0) {
+              var prevAvg = s.yearBars[ybi - 1].avg;
+              var change = (yb.avg - prevAvg) / prevAvg * 100;
+              pct.textContent = (change >= 0 ? '↑' : '↓') + Math.abs(Math.round(change)) + '%';
+              pct.classList.add(change >= 0 ? 'delta-up' : 'delta-down');
+            } else {
+              pct.innerHTML = '&nbsp;';
+            }
+            var val = document.createElement('div'); val.className = 'year-bar-value mono';
+            val.textContent = Math.round(yb.avg).toLocaleString();
+            var track = document.createElement('div'); track.className = 'year-bar-track';
+            var bar = document.createElement('div'); bar.className = 'year-bar';
+            bar.style.height = Math.max(6, Math.round((yb.avg / maxAvg) * 34)) + 'px';
+            bar.title = yb.year + (yb.note ? ' (' + yb.note + ')' : ' (full year)') + ' · ' + yb.n + ' readings';
+            track.appendChild(bar);
+            var yrLabel = document.createElement('div'); yrLabel.className = 'year-bar-label';
+            yrLabel.textContent = "'" + String(yb.year).slice(2);
+            col.appendChild(pct); col.appendChild(val); col.appendChild(track); col.appendChild(yrLabel);
+            barsWrap.appendChild(col);
+          });
+          tile.appendChild(barsWrap);
+        } else {
+          var value = document.createElement('div');
+          value.className = 'value mono' + (s.delta === 'up' ? ' delta-up' : s.delta === 'down' ? ' delta-down' : '');
+          value.textContent = s.value;
+          var sub = document.createElement('div'); sub.className = 'sub'; sub.textContent = s.sub;
+          tile.appendChild(value); tile.appendChild(sub);
+        }
+        statRow.appendChild(tile);
+      });
+    }
+
+    // ---------- Clear + redraw chart ----------
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    if (!points.length) {
+      var msg = el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', class: 'tick-label' });
+      msg.textContent = 'No data yet.';
+      svg.appendChild(msg);
+      pointXs = []; trendXs = []; majorBands = []; gapBands = [];
+    } else {
+      var bySeg = {};
+      points.forEach(function (p) { (bySeg[p.segIndex] = bySeg[p.segIndex] || []).push(p); });
+      var segIndices = Object.keys(bySeg).map(Number).sort(function (a, b) { return a - b; });
+      var majorSegIndices = segIndices.filter(function (si) { return bySeg[si].length >= MAJOR_MIN_POINTS; });
+
+      majorBands = majorSegIndices.map(function (si) {
+        var pts = bySeg[si];
+        return { segIndex: si, tStart: pts[0].t.getTime(), tEnd: pts[pts.length - 1].t.getTime() };
+      });
+      gapBands = [];
+      for (var gi = 0; gi < majorBands.length - 1; gi++) {
+        gapBands.push({ tStart: majorBands[gi].tEnd, tEnd: majorBands[gi + 1].tStart });
+      }
+
+      var weights = majorBands.map(function (b) { return Math.sqrt(Math.max((b.tEnd - b.tStart) / DAY_MS, 1)); });
+      var totalWeight = weights.reduce(function (a, b) { return a + b; }, 0);
+      var plotWData = plotW - gapBands.length * GAP_BAND_WIDTH;
+
+      var cursorX = M.left;
+      majorBands.forEach(function (b, i) {
+        b.xStart = cursorX;
+        b.width = plotWData * weights[i] / totalWeight;
+        b.xEnd = b.xStart + b.width;
+        cursorX = b.xEnd;
+        if (i < gapBands.length) {
+          gapBands[i].xStart = cursorX;
+          gapBands[i].xEnd = cursorX + GAP_BAND_WIDTH;
+          cursorX = gapBands[i].xEnd;
+        }
+      });
+
+      // gridlines + y labels
+      Y_TICKS.forEach(function (v) {
+        var y = yScale(v);
+        svg.appendChild(el('line', { x1: M.left, x2: W - M.right, y1: y, y2: y, class: v === 0 ? 'axis-line' : 'grid-line' }));
+        var t = el('text', { x: M.left - 8, y: y + 3, 'text-anchor': 'end', class: 'tick-label' });
+        t.textContent = v.toLocaleString();
+        svg.appendChild(t);
+      });
+
+      // gap-band masks
+      gapBands.forEach(function (g) {
+        var gx = (g.xStart + g.xEnd) / 2;
+        svg.appendChild(el('rect', { x: g.xStart, y: M.top, width: g.xEnd - g.xStart, height: plotH, class: 'gap-mask' }));
+        var baseY = H - M.bottom;
+        [-5, 5].forEach(function (dx) {
+          svg.appendChild(el('line', { x1: gx + dx - 4, x2: gx + dx + 4, y1: baseY + 5, y2: baseY - 5, class: 'gap-cut' }));
+        });
+        var days = Math.round((g.tEnd - g.tStart) / DAY_MS);
+        var lbl = el('text', { x: gx, y: M.top + plotH / 2 + 3, 'text-anchor': 'middle', class: 'gap-label' });
+        lbl.textContent = days + 'd gap';
+        svg.appendChild(lbl);
+      });
+
+      // x ticks
+      function fmtDateTick(d, useDay) {
+        return useDay
+          ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+          : fmtDateShort(d);
+      }
+      majorBands.forEach(function (b) {
+        var spanDaysB = (b.tEnd - b.tStart) / DAY_MS;
+        var useDay = spanDaysB <= 45;
+        var nTicks = b.width > 300 ? 3 : (b.width > 90 ? 2 : 1);
+        for (var i = 0; i < nTicks; i++) {
+          var frac = nTicks === 1 ? 0.5 : i / (nTicks - 1);
+          var tms = b.tStart + frac * (b.tEnd - b.tStart);
+          var tx = xScale(tms);
+          var t = el('text', { x: tx, y: H - M.bottom + 16, 'text-anchor': 'middle', class: 'tick-label' });
+          t.textContent = fmtDateTick(new Date(tms), useDay);
+          svg.appendChild(t);
+        }
+      });
+
+      // event markers
+      var chartEvents = events
+        .map(function (e, i) { return { e: e, num: i + 1 }; })
+        .filter(function (item) { return !PUMP_SAVER_ONLY_RE.test(item.e.label); });
+
+      var labelXs = chartEvents.map(function (item) { return xScale(item.e.t.getTime()); });
+      for (var li = 1; li < labelXs.length; li++) {
+        labelXs[li] = Math.max(labelXs[li], labelXs[li - 1] + LABEL_GAP);
+      }
+      var maxLabelX = W - M.right - LABEL_R;
+      if (labelXs.length && labelXs[labelXs.length - 1] > maxLabelX) {
+        labelXs[labelXs.length - 1] = maxLabelX;
+        for (var lj = labelXs.length - 2; lj >= 0; lj--) {
+          labelXs[lj] = Math.min(labelXs[lj], labelXs[lj + 1] - LABEL_GAP);
+        }
+      }
+      var minLabelX = M.left + LABEL_R;
+      labelXs = labelXs.map(function (x) { return Math.max(x, minLabelX); });
+
+      var labelY = 12;
+      chartEvents.forEach(function (item, i) {
+        var trueX = xScale(item.e.t.getTime());
+        var lx = labelXs[i];
+        svg.appendChild(el('line', { x1: trueX, x2: trueX, y1: M.top, y2: H - M.bottom, class: 'event-line' }));
+        if (Math.abs(lx - trueX) > 3) {
+          svg.appendChild(el('line', { x1: lx, x2: trueX, y1: labelY + LABEL_R, y2: M.top, class: 'event-leader' }));
+        }
+        svg.appendChild(el('circle', { cx: lx, cy: labelY, r: LABEL_R, class: 'event-badge' }));
+        var t = el('text', { x: lx, y: labelY + 3.5, 'text-anchor': 'middle', class: 'event-badge-text' });
+        t.textContent = String(item.num);
+        svg.appendChild(t);
+      });
+
+      // raw dots
+      var dotsLayer = el('g', {});
+      points.forEach(function (p) {
+        var x = xScale(p.t.getTime());
+        var offScale = p.gpd > Y_MAX;
+        var y = yScale(p.gpd);
+        if (offScale) {
+          var cx = x, cy = M.top + 3;
+          var tri = el('path', {
+            d: 'M ' + (cx - 4) + ' ' + (cy + 5) + ' L ' + cx + ' ' + (cy - 3) + ' L ' + (cx + 4) + ' ' + (cy + 5) + ' Z',
+            class: 'clip-marker'
+          });
+          dotsLayer.appendChild(tri);
+        } else {
+          dotsLayer.appendChild(el('circle', { cx: x, cy: y, r: 2.6, class: 'raw-dot' }));
+        }
+      });
+      svg.appendChild(dotsLayer);
+
+      // trend line, split at true logging gaps
+      var segments = [];
+      trend.forEach(function (p) {
+        var s = segments[segments.length - 1];
+        if (!s || s.segIndex !== p.segIndex) {
+          segments.push({ segIndex: p.segIndex, pts: [p] });
+        } else {
+          s.pts.push(p);
+        }
+      });
+      segments = segments.map(function (s) { return s.pts; });
+
+      segments.forEach(function (seg) {
+        if (seg.length < 2) return;
+        var d = seg.map(function (p, i) {
+          return (i === 0 ? 'M ' : 'L ') + xScale(p.t.getTime()) + ' ' + yScale(p.gpd);
+        }).join(' ');
+        svg.appendChild(el('path', { d: d, class: 'trend-line', style: 'stroke:' + trendColor + ';' }));
+      });
+
+      // axis border
+      svg.appendChild(el('line', { x1: M.left, x2: M.left, y1: M.top, y2: H - M.bottom, class: 'axis-line' }));
+
+      pointXs = points.map(function (p) { return xScale(p.t.getTime()); });
+      trendXs = trend.map(function (p) { return xScale(p.t.getTime()); });
+    }
+
+    // crosshair + hover dot (re-created fresh each render since the svg was cleared)
+    crosshair = el('line', { x1: 0, x2: 0, y1: M.top, y2: H - M.bottom, class: 'crosshair', opacity: 0 });
+    svg.appendChild(crosshair);
+    hoverDotTrend = el('circle', { r: 4, class: 'hover-dot-trend', opacity: 0, style: 'fill:' + trendColor + ';' });
+    svg.appendChild(hoverDotTrend);
+
+    // ---------- Events list ----------
+    eventsList.innerHTML = '';
+    if (!events.length) {
+      var emptyEv = document.createElement('div'); emptyEv.className = 'events-empty';
+      emptyEv.textContent = cfg.emptyEventsText;
+      eventsList.appendChild(emptyEv);
+    } else {
+      events.forEach(function (e, i) {
+        var row = document.createElement('div'); row.className = 'event-row';
+        var n = document.createElement('div'); n.className = 'e-num'; n.textContent = String(i + 1);
+        var d = document.createElement('div'); d.className = 'e-date mono'; d.textContent = fmtDateLong(e.t);
+        var l = document.createElement('div'); l.className = 'e-label'; l.textContent = e.label;
+        row.appendChild(n); row.appendChild(d); row.appendChild(l);
+        eventsList.appendChild(row);
+      });
+    }
+
+    // ---------- Monthly pumpage (well only - cfg.raw.monthly is absent
+    // on the pool dataset, so the card just stays hidden there) ----------
+    if (cfg.raw.monthly && cfg.raw.monthly.length) {
+      monthlyCardEl.style.display = '';
+      monthlyBodyEl.innerHTML = '';
+      var monthRows = cfg.raw.monthly.slice().reverse(); // newest first
+      monthRows.forEach(function (r) {
+        var tr = document.createElement('tr');
+
+        var tdMonth = document.createElement('td'); tdMonth.className = 'mo-month';
+        tdMonth.textContent = new Date(r.t).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+
+        var tdReading = document.createElement('td'); tdReading.className = 'mo-reading';
+        if (r.reading == null) {
+          tdReading.textContent = '—';
+          tdReading.classList.add('mo-pending');
+        } else {
+          var valEl = document.createElement('div');
+          valEl.textContent = (r.estimated ? '≈' : '') + Math.round(r.reading).toLocaleString() + ' gal';
+          tdReading.appendChild(valEl);
+          if (r.estimated) {
+            tdReading.title = r.lowConfidence
+              ? 'Estimated — interpolated across a gap of 30+ days in readings.'
+              : 'Estimated — no reading was logged exactly on the 1st; interpolated from the nearest readings.';
+            if (r.sourceNote) {
+              var srcEl = document.createElement('div'); srcEl.className = 'mo-source';
+              srcEl.textContent = r.sourceNote;
+              tdReading.appendChild(srcEl);
+            }
+          }
+        }
+
+        var tdPumped = document.createElement('td'); tdPumped.className = 'mo-pumped';
+        if (r.pumped == null) {
+          tdPumped.textContent = '—';
+          tdPumped.classList.add('mo-pending');
+          tdPumped.title = 'Month still in progress.';
+        } else {
+          tdPumped.textContent = (r.pumpedEstimated ? '~' : '') + Math.round(r.pumped).toLocaleString() + ' gal';
+        }
+
+        tr.appendChild(tdMonth); tr.appendChild(tdReading); tr.appendChild(tdPumped);
+        monthlyBodyEl.appendChild(tr);
+      });
+    } else {
+      monthlyCardEl.style.display = 'none';
+    }
+
+    // ---------- Footer ----------
+    var clippedCount = points.filter(function (p) { return p.gpd > Y_MAX; }).length;
+    if (key === 'well') {
+      var exLen2 = cfg.raw.excludedLow.length;
+      footer.innerHTML =
+        '<strong>Reading this chart:</strong> each gallons-per-day figure is extrapolated from the meter delta between two readings, so a short gap between readings can swing the raw number — ' + clippedCount + ' reading' + (clippedCount === 1 ? '' : 's') + ' above ' + Y_MAX + ' gpd ' + (clippedCount === 1 ? 'is' : 'are') + ' clipped to the top of the chart (▲, real value in the tooltip). Those are also left out of the trend line: each one follows a stretch where the well had been resting (idle or barely used), so the water table had time to recover and the next reading catches an elevated, temporary rate rather than sustained output. Separately, ' + exLen2 + ' readings under ' + cfg.raw.lowCut + ' gpd are left out entirely as tank-full artifacts, from both the dots and the trend. The trend line is the median of the 7 most recent steady-use readings, and that window restarts fresh right after each logged equipment/setting change instead of blending old and new readings together — so after a real change it catches up in a reading or two rather than trailing behind for a week or more. Numbered markers above the chart are equipment changes worth a visual flag; plain pump-saver setting tweaks are left off the chart itself to avoid crowding the axis, but every logged change, settings included, is still dated in the list below. The "//" breaks mark stretches of 30+ days with no logging at all, compressed to a fixed width regardless of their real length so the surrounding bursts of real readings get more room on screen; shorter gaps are drawn as a normal connecting line at true scale. The axis labels either side of a break are the true dates, just not evenly spaced against each other. ' + cfg.sourceLine;
+    } else {
+      var exLenShort = cfg.raw.excludedShort.length;
+      footer.innerHTML =
+        '<strong>Reading this chart:</strong> each gallons-per-day figure is extrapolated from the meter delta between two readings, so a short gap between readings can swing the raw number — the pool is topped off in short bursts every few hours, so a reading taken less than a day after the previous one can imply a wildly inflated (or zero) daily rate that doesn\'t reflect real usage. ' + exLenShort + ' reading' + (exLenShort === 1 ? '' : 's') + ' less than 24 hours after the prior one ' + (exLenShort === 1 ? 'is' : 'are') + ' left out entirely, from both the dots and the trend — unlike the well chart, there\'s no tank-full filter here, so every remaining reading counts, zeros included; a zero just means nothing was added over that stretch. ' + clippedCount + ' remaining reading' + (clippedCount === 1 ? '' : 's') + ' above ' + Y_MAX + ' gpd ' + (clippedCount === 1 ? 'is' : 'are') + ' clipped to the top of the chart (▲, real value in the tooltip) but stay in the trend — those are genuine big top-off days, not artifacts. The trend line is the median of the 7 most recent (24h+) readings, running continuously rather than resetting at logged notes the way the well chart resets at equipment changes. The "//" breaks mark stretches of 30+ days with no logging at all, compressed to a fixed width so the surrounding bursts of real readings get more room on screen; shorter gaps are drawn as a normal connecting line at true scale. The axis labels either side of a break are the true dates, just not evenly spaced against each other. ' + cfg.sourceLine;
+    }
+  }
+
+  // ---------- Combined view: both trend lines on one shared time axis and
+  // one shared gpd scale (never a dual y-axis - both series are the same
+  // unit and comparable magnitude, so one axis is the honest choice here).
+  // Deliberately simpler than renderView: no stat tiles, no events card,
+  // no compressed-gap axis (compressing either line's gaps independently
+  // would break date alignment between them, which is the whole point).
+  function renderCombined() {
+    document.querySelectorAll('.view-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-view') === 'combined');
+    });
+    pageTitleEl.textContent = 'Well & Pool Comparison';
+    pageDescEl.innerHTML = 'The same two trend lines on one shared time axis and gallons-per-day scale, so you can see how well output and pool top-offs move relative to each other. Well in brown, pool in blue.';
+    chartCardTitleEl.textContent = 'Gallons per day, well vs. pool';
+    eventsCardEl.style.display = 'none';
+    monthlyCardEl.style.display = 'none';
+    legendEventItemEl.style.display = 'none';
+    legendRawItemEl.style.display = 'none';
+    legendTrendItemEl.style.display = 'none';
+    legendWellItemEl.style.display = '';
+    legendPoolItemEl.style.display = '';
+    statRow.style.display = 'none';
+    statRow.innerHTML = '';
+    eventsList.innerHTML = '';
+
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    var wellTrend = VIEWS.well.raw.trend.map(function (p) { return { t: new Date(p.t), gpd: p.gpd, segIndex: p.segIndex }; });
+    var poolTrend = VIEWS.pool.raw.trend.map(function (p) { return { t: new Date(p.t), gpd: p.gpd, segIndex: p.segIndex }; });
+
+    if (!wellTrend.length && !poolTrend.length) {
+      var msg = el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle', class: 'tick-label' });
+      msg.textContent = 'No data yet.';
+      svg.appendChild(msg);
+      combinedWellTrend = []; combinedPoolTrend = []; combinedMergedXs = [];
+    } else {
+      var allTimes = wellTrend.concat(poolTrend).map(function (p) { return p.t.getTime(); });
+      var tMin = Math.min.apply(null, allTimes), tMax = Math.max.apply(null, allTimes);
+      var allVals = wellTrend.concat(poolTrend).map(function (p) { return p.gpd; });
+      var maxVal = Math.max.apply(null, allVals.concat([1]));
+      var niceMax = Math.max(50, Math.ceil((maxVal * 1.1) / 50) * 50);
+      var cTicks = [0, 1, 2, 3, 4].map(function (i) { return Math.round(niceMax * i / 4); });
+
+      combinedCX = function (tms) { return M.left + (tMax === tMin ? plotW / 2 : (tms - tMin) / (tMax - tMin) * plotW); };
+      combinedCY = function (v) { return M.top + plotH - (Math.min(v, niceMax) / niceMax) * plotH; };
+      combinedTMin = tMin; combinedTMax = tMax;
+
+      cTicks.forEach(function (v) {
+        var y = combinedCY(v);
+        svg.appendChild(el('line', { x1: M.left, x2: W - M.right, y1: y, y2: y, class: v === 0 ? 'axis-line' : 'grid-line' }));
+        var t = el('text', { x: M.left - 8, y: y + 3, 'text-anchor': 'end', class: 'tick-label' });
+        t.textContent = v.toLocaleString();
+        svg.appendChild(t);
+      });
+
+      var nXTicks = 6;
+      for (var xi = 0; xi <= nXTicks; xi++) {
+        var tms = tMin + (xi / nXTicks) * (tMax - tMin);
+        var tx = combinedCX(tms);
+        var t2 = el('text', { x: tx, y: H - M.bottom + 16, 'text-anchor': 'middle', class: 'tick-label' });
+        t2.textContent = fmtDateShort(new Date(tms));
+        svg.appendChild(t2);
+      }
+
+      function drawTrendLine(seriesTrend, colorVar) {
+        // split wherever this series' own segIndex changes (its true-logging
+        // gaps, already computed Python-side) rather than a separate
+        // JS-side threshold, so a real gap still breaks the line instead of
+        // interpolating across it - it just isn't compressed to a fixed
+        // width the way the single-view charts do it.
+        var segs = [];
+        seriesTrend.forEach(function (p) {
+          var s = segs[segs.length - 1];
+          if (!s || s.segIndex !== p.segIndex) segs.push({ segIndex: p.segIndex, pts: [p] });
+          else s.pts.push(p);
+        });
+        segs.forEach(function (s) {
+          if (s.pts.length < 2) return;
+          var d = s.pts.map(function (p, i) {
+            return (i === 0 ? 'M ' : 'L ') + combinedCX(p.t.getTime()) + ' ' + combinedCY(p.gpd);
+          }).join(' ');
+          svg.appendChild(el('path', { d: d, style: 'fill:none;stroke:' + colorVar + ';stroke-width:2;stroke-linecap:round;stroke-linejoin:round;' }));
+        });
+      }
+      drawTrendLine(wellTrend, 'var(--accent-well)');
+      drawTrendLine(poolTrend, 'var(--accent)');
+
+      svg.appendChild(el('line', { x1: M.left, x2: M.left, y1: M.top, y2: H - M.bottom, class: 'axis-line' }));
+
+      combinedWellTrend = wellTrend;
+      combinedPoolTrend = poolTrend;
+      combinedMergedXs = wellTrend.concat(poolTrend)
+        .map(function (p) { return combinedCX(p.t.getTime()); })
+        .sort(function (a, b) { return a - b; });
+    }
+
+    crosshair = el('line', { x1: 0, x2: 0, y1: M.top, y2: H - M.bottom, class: 'crosshair', opacity: 0 });
+    svg.appendChild(crosshair);
+    hoverDotWell = el('circle', { r: 4, opacity: 0 });
+    hoverDotWell.setAttribute('style', 'fill:var(--accent-well);stroke:var(--surface);stroke-width:2;');
+    hoverDotPool = el('circle', { r: 4, opacity: 0 });
+    hoverDotPool.setAttribute('style', 'fill:var(--accent);stroke:var(--surface);stroke-width:2;');
+    svg.appendChild(hoverDotWell);
+    svg.appendChild(hoverDotPool);
+
+    footer.innerHTML =
+      '<strong>Reading this chart:</strong> both lines are the same 7-reading rolling median trend shown on their own tabs, plotted here on one shared time axis and one shared gallons-per-day scale so the two are directly comparable. Unlike the individual charts, this axis doesn&rsquo;t compress long no-logging stretches into a fixed-width break — doing that separately for each line would throw off the date alignment between them, which is the whole point of this view. A real gap of 30+ days in either dataset just breaks that line rather than drawing a false connection across it; the other line keeps going if it has data there. ' + VIEWS.well.sourceLine + ' ' + VIEWS.pool.sourceLine;
+  }
+
+  function onMoveCombined(evt) {
+    var p = pointerToSvg(evt);
+    if (!p || p.x < M.left || p.x > W - M.right || !combinedMergedXs.length) { hideHover(); return; }
+    var idx = nearestIndex(combinedMergedXs, p.x);
+    var x = combinedMergedXs[idx];
+    crosshair.setAttribute('x1', x);
+    crosshair.setAttribute('x2', x);
+    crosshair.setAttribute('opacity', 1);
+
+    var frac = plotW === 0 ? 0 : (x - M.left) / plotW;
+    var refMs = combinedTMin + frac * (combinedTMax - combinedTMin);
+
+    function nearestPt(arr) {
+      if (!arr.length) return null;
+      var best = arr[0], bestDiff = Math.abs(arr[0].t.getTime() - refMs);
+      for (var i = 1; i < arr.length; i++) {
+        var diff = Math.abs(arr[i].t.getTime() - refMs);
+        if (diff < bestDiff) { best = arr[i]; bestDiff = diff; }
+      }
+      return best;
+    }
+    var wellPt = nearestPt(combinedWellTrend);
+    var poolPt = nearestPt(combinedPoolTrend);
+
+    tooltip.innerHTML = '';
+    var dateEl = document.createElement('div'); dateEl.className = 't-date'; dateEl.textContent = fmtDate(new Date(refMs));
+    tooltip.appendChild(dateEl);
+
+    if (wellPt) {
+      hoverDotWell.setAttribute('cx', combinedCX(wellPt.t.getTime()));
+      hoverDotWell.setAttribute('cy', combinedCY(wellPt.gpd));
+      hoverDotWell.setAttribute('opacity', 1);
+      var row1 = document.createElement('div'); row1.className = 't-row';
+      var key1 = document.createElement('span'); key1.className = 't-key'; key1.style.background = 'var(--accent-well)';
+      var val1 = document.createElement('span'); val1.className = 't-val'; val1.textContent = fmtGpd(wellPt.gpd, 'gpd') + ' well (' + fmtDateShort(wellPt.t) + ')';
+      row1.appendChild(key1); row1.appendChild(val1);
+      tooltip.appendChild(row1);
+    } else {
+      hoverDotWell.setAttribute('opacity', 0);
+    }
+
+    if (poolPt) {
+      hoverDotPool.setAttribute('cx', combinedCX(poolPt.t.getTime()));
+      hoverDotPool.setAttribute('cy', combinedCY(poolPt.gpd));
+      hoverDotPool.setAttribute('opacity', 1);
+      var row2 = document.createElement('div'); row2.className = 't-row';
+      var key2 = document.createElement('span'); key2.className = 't-key'; key2.style.background = 'var(--accent)';
+      var val2 = document.createElement('span'); val2.className = 't-val'; val2.textContent = fmtGpd(poolPt.gpd, 'gpd') + ' pool (' + fmtDateShort(poolPt.t) + ')';
+      row2.appendChild(key2); row2.appendChild(val2);
+      tooltip.appendChild(row2);
+    } else {
+      hoverDotPool.setAttribute('opacity', 0);
+    }
+
+    var shellRect = chartShell.getBoundingClientRect();
+    var svgRect = svg.getBoundingClientRect();
+    var refY = wellPt && poolPt ? (combinedCY(wellPt.gpd) + combinedCY(poolPt.gpd)) / 2 : combinedCY((wellPt || poolPt).gpd);
+    var pxX = svgRect.left - shellRect.left + (x / W) * svgRect.width;
+    var pxY = svgRect.top - shellRect.top + (refY / H) * svgRect.height;
+    tooltip.style.left = pxX + 'px';
+    tooltip.style.top = pxY + 'px';
+    tooltip.classList.add('show');
+  }
+
+  document.querySelectorAll('.view-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var v = btn.getAttribute('data-view');
+      if (v === currentView) return;
+      currentView = v;
+      if (v === 'combined') renderCombined(); else renderView(v);
+    });
+  });
+
+  renderView(currentView);
+})();
+</script>
+
+</body>
+</html>
